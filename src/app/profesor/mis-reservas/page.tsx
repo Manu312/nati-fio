@@ -3,10 +3,37 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-import { UserRole } from '@/types';
+import { UserRole, BookingStatus } from '@/types';
 import type { Booking } from '@/types';
 import { bookingService } from '@/services/booking.service';
-import { Button } from '@/components/ui/Button';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
+
+// Función auxiliar para parsear fecha y hora de forma segura
+const parseBookingDateTime = (date: string, time: string): Date => {
+  try {
+    if (time && time.includes('T')) {
+      return parseISO(time);
+    }
+    if (date && time) {
+      const dateStr = date.includes('T') ? date.split('T')[0] : date;
+      return parseISO(`${dateStr}T${time}`);
+    }
+    if (date) {
+      return parseISO(date);
+    }
+    return new Date();
+  } catch {
+    return new Date();
+  }
+};
+
+const statusMap: Record<string, { label: string; className: string }> = {
+  PENDING: { label: 'Pendiente', className: 'bg-yellow-100 text-yellow-800' },
+  CONFIRMED: { label: 'Confirmada', className: 'bg-green-100 text-green-800' },
+  CANCELLED: { label: 'Cancelada', className: 'bg-red-100 text-red-800' },
+  COMPLETED: { label: 'Completada', className: 'bg-blue-100 text-blue-800' },
+};
 
 export default function ProfesorReservasPage() {
   const { isLoading } = useProtectedRoute({ requiredRoles: [UserRole.PROFESOR] });
@@ -66,26 +93,31 @@ export default function ProfesorReservasPage() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">
-                    Alumno: {booking.student?.email || 'No disponible'}
+                    {booking.student?.firstName && booking.student?.lastName 
+                      ? `${booking.student.firstName} ${booking.student.lastName}`
+                      : booking.student?.email || booking.student?.user?.email || 'Alumno'}
                   </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Estado: <span className={`font-medium ${
-                      booking.status === 'CONFIRMED' ? 'text-green-600' :
-                      booking.status === 'CANCELLED' ? 'text-red-600' :
-                      'text-yellow-600'
-                    }`}>
-                      {booking.status === 'PENDING' ? 'Pendiente' :
-                       booking.status === 'CONFIRMED' ? 'Confirmada' : 'Cancelada'}
-                    </span>
+                  {booking.subject?.name && (
+                    <p className="text-sm text-blue-600 font-medium">
+                      📚 {booking.subject.name}
+                    </p>
+                  )}
+                  <p className="text-sm text-gray-500">
+                    {booking.student?.email || booking.student?.user?.email}
                   </p>
                 </div>
-                <span className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                  {new Date(booking.startTime).toLocaleDateString()}
+                <span className={`px-3 py-1 text-xs rounded-full ${statusMap[booking.status]?.className || 'bg-gray-100 text-gray-800'}`}>
+                  {statusMap[booking.status]?.label || booking.status}
                 </span>
               </div>
 
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>⏰ {new Date(booking.startTime).toLocaleTimeString()} - {new Date(booking.endTime).toLocaleTimeString()}</p>
+              <div className="text-sm text-gray-600 space-y-2">
+                <p className="flex items-center gap-2">
+                  📅 {format(parseBookingDateTime(booking.date, booking.startTime), "EEEE d 'de' MMMM, yyyy", { locale: es })}
+                </p>
+                <p className="flex items-center gap-2">
+                  ⏰ {format(parseBookingDateTime(booking.date, booking.startTime), 'HH:mm', { locale: es })} - {format(parseBookingDateTime(booking.date, booking.endTime), 'HH:mm', { locale: es })}
+                </p>
               </div>
             </motion.div>
           ))}

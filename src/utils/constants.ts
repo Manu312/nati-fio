@@ -29,7 +29,7 @@ export const ROUTES = {
   // Profesor routes (futuro)
   PROFESOR: {
     HOME: '/profesor',
-    MIS_CLASES: '/profesor/mis-clases',
+    MIS_RESERVAS: '/profesor/mis-reservas',
     DISPONIBILIDAD: '/profesor/disponibilidad',
   },
   

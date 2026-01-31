@@ -51,14 +51,22 @@ export function CreateBookingModal({
 
   const loadAvailabilitiesAndBookings = async () => {
     try {
-      const [allAvailabilities, allBookings] = await Promise.all([
-        availabilityService.getAll(),
-        bookingService.getAll(),
-      ]);
+      // Cargar disponibilidades (no requiere auth)
+      const allAvailabilities = await availabilityService.getAll();
       setAvailabilities(allAvailabilities);
-      setExistingBookings(allBookings);
+      
+      // Intentar cargar bookings existentes (requiere auth)
+      try {
+        const allBookings = await bookingService.getAll();
+        setExistingBookings(allBookings);
+      } catch (bookingErr) {
+        console.warn('No se pudieron cargar las reservas existentes:', bookingErr);
+        // Continuar sin las reservas existentes - el usuario podrá hacer la reserva
+        // y el backend validará si hay conflictos
+        setExistingBookings([]);
+      }
     } catch (err) {
-      console.error('Error loading data:', err);
+      console.error('Error loading availabilities:', err);
     }
   };
 

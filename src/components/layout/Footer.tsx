@@ -26,13 +26,6 @@ export function Footer() {
                     </div>
 
                     {/* Legal */}
-                    <div>
-                        <h4 className="font-semibold mb-4 text-white">Legal</h4>
-                        <ul className="space-y-2 text-sm text-gray-400">
-                            <li><Link href="#" className="hover:text-primary transition-colors">Términos y Condiciones</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Política de Privacidad</Link></li>
-                        </ul>
-                    </div>
 
                     {/* Contact */}
                     <div>
@@ -40,18 +33,15 @@ export function Footer() {
                         <ul className="space-y-3 text-sm text-gray-400">
                             <li className="flex items-center gap-2">
                                 <Mail className="w-4 h-4 text-primary" />
-                                <span>contacto@natyfio.com</span>
+                                <span>fncursosdeingreso@gmail.com</span>
                             </li>
                             <li className="flex items-center gap-2">
                                 <Phone className="w-4 h-4 text-primary" />
-                                <span>+54 11 1234-5678</span>
+                                <span>+54 9 11 6648-3929</span>
                             </li>
                             <li className="flex gap-4 mt-4">
-                                <Link href="#" className="p-2 rounded-full bg-white/5 hover:bg-primary/20 hover:text-primary transition-colors">
+                                <Link href="https://www.instagram.com/insti_natyfiore/" className="p-2 rounded-full bg-white/5 hover:bg-primary/20 hover:text-primary transition-colors">
                                     <Instagram className="w-5 h-5" />
-                                </Link>
-                                <Link href="#" className="p-2 rounded-full bg-white/5 hover:bg-primary/20 hover:text-primary transition-colors">
-                                    <Facebook className="w-5 h-5" />
                                 </Link>
                             </li>
                         </ul>

@@ -7,19 +7,16 @@ import { User } from './user';
 export interface Subject {
   id: number;
   name: string;
-  description?: string;
   level?: string;
 }
 
 export interface CreateSubjectDto {
   name: string;
-  description?: string;
   level?: string;
 }
 
 export interface UpdateSubjectDto {
   name?: string;
-  description?: string;
   level?: string;
 }
 

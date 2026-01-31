@@ -44,28 +44,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const initAuth = () => {
       try {
-        console.log('🔄 Inicializando autenticación desde localStorage...');
-        
-        // Leer directamente de localStorage con las keys correctas
         const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
         const userStr = typeof window !== 'undefined' ? localStorage.getItem('auth_user') : null;
-        
-        console.log('📦 Token encontrado:', !!token);
-        console.log('📦 User string encontrado:', !!userStr);
 
         if (token && userStr) {
           try {
             const user = JSON.parse(userStr);
-            console.log('✅ Usuario recuperado de localStorage:', user);
-            
             setState({
               user,
               token,
               isAuthenticated: true,
               isLoading: false,
             });
-          } catch (parseError) {
-            console.error('❌ Error parseando usuario:', parseError);
+          } catch {
             setState({
               user: null,
               token: null,
@@ -74,7 +65,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
             });
           }
         } else {
-          console.log('⚠️ No hay sesión guardada');
           setState({
             user: null,
             token: null,
@@ -82,8 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             isLoading: false,
           });
         }
-      } catch (error) {
-        console.error('❌ Error al inicializar autenticación:', error);
+      } catch {
         setState({
           user: null,
           token: null,

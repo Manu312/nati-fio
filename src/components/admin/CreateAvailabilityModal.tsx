@@ -11,6 +11,8 @@ interface CreateAvailabilityModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  preselectedTeacherId?: string | null;
+  preselectedDay?: number | null;
 }
 
 interface TimeSlot {
@@ -30,7 +32,7 @@ const DAYS_OF_WEEK = [
   { value: 0, label: 'Domingo' },
 ];
 
-export function CreateAvailabilityModal({ isOpen, onClose, onSuccess }: CreateAvailabilityModalProps) {
+export function CreateAvailabilityModal({ isOpen, onClose, onSuccess, preselectedTeacherId, preselectedDay }: CreateAvailabilityModalProps) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,19 +49,19 @@ export function CreateAvailabilityModal({ isOpen, onClose, onSuccess }: CreateAv
   useEffect(() => {
     if (isOpen) {
       loadTeachers();
-      // Reset form
-      setSelectedTeacherId('');
+      // Reset form con preselección si existe
+      setSelectedTeacherId(preselectedTeacherId || '');
       setTimeSlots([
         {
           id: crypto.randomUUID(),
-          dayOfWeek: 1,
+          dayOfWeek: preselectedDay !== null && preselectedDay !== undefined ? preselectedDay : 1,
           startTime: '09:00',
           endTime: '10:00',
         },
       ]);
       setError('');
     }
-  }, [isOpen]);
+  }, [isOpen, preselectedTeacherId, preselectedDay]);
 
   const loadTeachers = async () => {
     try {

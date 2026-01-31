@@ -4,16 +4,41 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { UserRole, BookingStatus } from '@/types';
-import type { Booking } from '@/types';
+import type { Booking, UpdateBookingDto } from '@/types';
 import { bookingService } from '@/services/booking.service';
 import { Button } from '@/components/ui/Button';
-import { format } from 'date-fns';
+import { EditBookingModal } from '@/components/admin/EditBookingModal';
+import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+// Función auxiliar para parsear fecha y hora de forma segura
+const parseBookingDateTime = (date: string, time: string): Date => {
+  try {
+    // Si el tiempo ya es un datetime completo (ISO), usarlo directamente
+    if (time && time.includes('T')) {
+      return parseISO(time);
+    }
+    // Si tenemos fecha y hora separadas, combinarlas
+    if (date && time) {
+      const dateStr = date.includes('T') ? date.split('T')[0] : date;
+      return parseISO(`${dateStr}T${time}`);
+    }
+    // Si solo tenemos la fecha
+    if (date) {
+      return parseISO(date);
+    }
+    return new Date();
+  } catch {
+    return new Date();
+  }
+};
 
 export default function ReservasAdminPage() {
   const { isLoading } = useProtectedRoute({ requiredRoles: [UserRole.ADMIN] });
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     loadBookings();
@@ -40,6 +65,25 @@ export default function ReservasAdminPage() {
     } catch (error: any) {
       alert(error.response?.data?.message || 'Error al cancelar la reserva');
     }
+  };
+
+  const handleConfirm = async (id: string) => {
+    try {
+      await bookingService.confirm(id);
+      loadBookings();
+    } catch (error: any) {
+      alert(error.message || 'Error al confirmar la reserva');
+    }
+  };
+
+  const handleEdit = (booking: Booking) => {
+    setEditingBooking(booking);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (id: string, data: UpdateBookingDto) => {
+    await bookingService.update(id, data);
+    loadBookings();
   };
 
   if (isLoading) {
@@ -117,11 +161,11 @@ export default function ReservasAdminPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {format(new Date(booking.startTime), "dd 'de' MMMM, yyyy", { locale: es })}
+                      {format(parseBookingDateTime(booking.date, booking.startTime), "dd 'de' MMMM, yyyy", { locale: es })}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {format(new Date(booking.startTime), 'HH:mm', { locale: es })} - {' '}
-                      {format(new Date(booking.endTime), 'HH:mm', { locale: es })}
+                      {format(parseBookingDateTime(booking.date, booking.startTime), 'HH:mm', { locale: es })} - {' '}
+                      {format(parseBookingDateTime(booking.date, booking.endTime), 'HH:mm', { locale: es })}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -131,7 +175,25 @@ export default function ReservasAdminPage() {
                       {statusMap[booking.status]?.label || booking.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                    {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleEdit(booking)}
+                      >
+                        Editar
+                      </Button>
+                    )}
+                    {booking.status === BookingStatus.PENDING && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleConfirm(booking.id)}
+                      >
+                        Confirmar
+                      </Button>
+                    )}
                     {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
                       <Button
                         variant="danger"
@@ -148,6 +210,17 @@ export default function ReservasAdminPage() {
           </table>
         </div>
       )}
+
+      {/* Modal de edición */}
+      <EditBookingModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingBooking(null);
+        }}
+        onSubmit={handleEditSubmit}
+        booking={editingBooking}
+      />
     </div>
   );
 }

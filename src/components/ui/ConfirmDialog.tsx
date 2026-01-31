@@ -1,18 +1,21 @@
 'use client';
 
+import { ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from './Button';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
   title: string;
-  message: string;
+  message: ReactNode;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
   variant?: 'danger' | 'warning' | 'info';
+  isLoading?: boolean;
 }
 
 export function ConfirmDialog({
@@ -23,8 +26,12 @@ export function ConfirmDialog({
   cancelText = 'Cancelar',
   onConfirm,
   onCancel,
+  onClose,
   variant = 'danger',
+  isLoading = false,
 }: ConfirmDialogProps) {
+  const handleClose = onClose || onCancel || (() => {});
+  
   const variantStyles = {
     danger: {
       icon: 'text-red-600',
@@ -54,7 +61,7 @@ export function ConfirmDialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50"
-            onClick={onCancel}
+            onClick={handleClose}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -70,27 +77,33 @@ export function ConfirmDialog({
               <h3 className="text-xl font-bold text-gray-900 mb-2">
                 {title}
               </h3>
-              <p className="text-gray-600 mb-6">
+              <div className="text-gray-600 mb-6">
                 {message}
-              </p>
+              </div>
 
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  onClick={onCancel}
+                  onClick={handleClose}
                   className="flex-1"
+                  disabled={isLoading}
                 >
                   {cancelText}
                 </Button>
                 <Button
                   variant={style.buttonVariant}
-                  onClick={() => {
-                    onConfirm();
-                    onCancel();
-                  }}
+                  onClick={onConfirm}
                   className="flex-1"
+                  disabled={isLoading}
                 >
-                  {confirmText}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Procesando...
+                    </>
+                  ) : (
+                    confirmText
+                  )}
                 </Button>
               </div>
             </div>

@@ -4,7 +4,7 @@
 
 import { apiClient } from './api';
 import { ENDPOINTS } from '@/config/api.config';
-import type { Booking, CreateBookingDto } from '@/types';
+import type { Booking, CreateBookingDto, UpdateBookingDto } from '@/types';
 
 export const bookingService = {
   /**
@@ -29,9 +29,23 @@ export const bookingService = {
   },
 
   /**
+   * Actualizar reserva (solo Admin - transferir profesor, cambiar horario)
+   */
+  async update(id: string, data: UpdateBookingDto): Promise<Booking> {
+    return apiClient.patch<Booking>(ENDPOINTS.BOOKINGS.BY_ID(id), data);
+  },
+
+  /**
    * Cancelar reserva
    */
   async cancel(id: string): Promise<void> {
     return apiClient.delete<void>(ENDPOINTS.BOOKINGS.BY_ID(id));
+  },
+
+  /**
+   * Confirmar reserva (solo Admin)
+   */
+  async confirm(id: string): Promise<Booking> {
+    return apiClient.patch<Booking>(ENDPOINTS.BOOKINGS.CONFIRM(id));
   },
 };

@@ -10,6 +10,13 @@ import { Button } from '@/components/ui/Button';
 import { CreateSubjectModal } from '@/components/admin/CreateSubjectModal';
 import { EditSubjectModal } from '@/components/admin/EditSubjectModal';
 
+// Mapeo de niveles para mostrar de forma legible
+const levelLabels: Record<string, { label: string; className: string }> = {
+  primaria: { label: 'Primario', className: 'bg-green-100 text-green-700' },
+  secundaria: { label: 'Secundario', className: 'bg-blue-100 text-blue-700' },
+  universitaria: { label: 'Universitario', className: 'bg-purple-100 text-purple-700' },
+};
+
 export default function MateriasPage() {
   const { isLoading } = useProtectedRoute({ requiredRoles: [UserRole.ADMIN] });
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -91,22 +98,17 @@ export default function MateriasPage() {
               transition={{ delay: index * 0.05 }}
               className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6"
             >
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex justify-between items-start mb-4">
                 <h3 className="text-xl font-bold text-gray-900">
                   {subject.name}
                 </h3>
-                {subject.level && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                    {subject.level}
+                {subject.level && levelLabels[subject.level] && (
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${levelLabels[subject.level].className}`}>
+                    {levelLabels[subject.level].label}
                   </span>
                 )}
               </div>
-              {subject.description && (
-                <p className="text-gray-600 text-sm mb-4">
-                  {subject.description}
-                </p>
-              )}
-              <div className="flex gap-2 mt-4">
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"

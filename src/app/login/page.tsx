@@ -14,38 +14,23 @@ export default function LoginPage() {
   const [showRoleSelector, setShowRoleSelector] = useState(false);
 
   useEffect(() => {
-    console.log('🔄 Login Page useEffect ejecutado');
-    console.log('🔄 isLoading:', isLoading);
-    console.log('🔄 isAuthenticated:', isAuthenticated);
-    console.log('🔄 user:', user);
-    
     if (!isLoading && isAuthenticated && user) {
-      console.log('🔍 Login Page - Usuario autenticado:', user);
-      console.log('🔍 Login Page - Roles del usuario:', user.roles);
-      console.log('🔍 Login Page - Cantidad de roles:', user.roles.length);
-      
       // Si tiene múltiples roles, mostrar selector
       if (user.roles.length > 1) {
-        console.log('� Usuario tiene múltiples roles, mostrando selector');
         setShowRoleSelector(true);
         return;
       }
       
       // Si solo tiene un rol, redirigir directamente
       const role = user.roles[0];
-      console.log('🔍 Único rol:', role);
       
       if (role === UserRole.ADMIN) {
-        console.log('✅ Redirigiendo a /admin');
         router.push('/admin');
       } else if (role === UserRole.PROFESOR) {
-        console.log('✅ Redirigiendo a /profesor');
         router.push('/profesor');
       } else if (role === UserRole.ALUMNO) {
-        console.log('✅ Redirigiendo a /alumno');
         router.push('/alumno');
       } else {
-        console.log('⚠️ Rol desconocido, redirigiendo a /');
         router.push('/');
       }
     }

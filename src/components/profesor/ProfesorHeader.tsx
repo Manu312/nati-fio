@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { PanelSwitcher } from '@/components/ui/PanelSwitcher';
 
 export function ProfesorHeader() {
   const { user, logout } = useAuth();
@@ -31,13 +32,18 @@ export function ProfesorHeader() {
   return (
     <header className="bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800">
-            Gestión de Clases
-          </h2>
-          <p className="text-sm text-gray-500">
-            Administra tu horario y reservas
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800">
+              Gestión de Clases
+            </h2>
+            <p className="text-sm text-gray-500">
+              Administra tu horario y reservas
+            </p>
+          </div>
+          {user?.roles && user.roles.length > 1 && (
+            <PanelSwitcher roles={user.roles} currentPanel="profesor" />
+          )}
         </div>
 
         <div className="relative" ref={menuRef}>

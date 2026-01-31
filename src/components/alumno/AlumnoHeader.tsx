@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { LogOut, User } from 'lucide-react';
+import { PanelSwitcher } from '@/components/ui/PanelSwitcher';
 
 export function AlumnoHeader() {
   const { user, logout } = useAuth();
@@ -17,8 +18,11 @@ export function AlumnoHeader() {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-4">
           <h1 className="text-xl font-semibold text-gray-900">Mi Panel de Alumno</h1>
+          {user?.roles && user.roles.length > 1 && (
+            <PanelSwitcher roles={user.roles} currentPanel="alumno" />
+          )}
         </div>
 
         <div className="flex items-center gap-4">

@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { userService } from '@/services';
 import { User, UserRole } from '@/types';
-import { Loader2, Plus, User as UserIcon, Edit } from 'lucide-react';
+import { Loader2, Plus, User as UserIcon, Edit, Trash2 } from 'lucide-react';
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
 import { EditUserRolesModal } from '@/components/admin/EditUserRolesModal';
 import { Alert } from '@/components/ui/Alert';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { format } from '@/utils/format';
 
 export default function UsuariosPage() {
@@ -18,6 +19,9 @@ export default function UsuariosPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -51,6 +55,30 @@ export default function UsuariosPage() {
   const handleEditUser = (user: User) => {
     setSelectedUser(user);
     setIsEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (user: User) => {
+    setUserToDelete(user);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!userToDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      await userService.delete(userToDelete.id);
+      setSuccessMessage('Usuario eliminado exitosamente');
+      setIsDeleteDialogOpen(false);
+      setUserToDelete(null);
+      loadUsers();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al eliminar usuario');
+      setIsDeleteDialogOpen(false);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -160,13 +188,22 @@ export default function UsuariosPage() {
                     {user.createdAt ? format.date(user.createdAt) : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleEditUser(user)}
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-900 font-medium"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Editar
-                    </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => handleEditUser(user)}
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-900 font-medium"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(user)}
+                        className="inline-flex items-center gap-1 text-red-600 hover:text-red-900 font-medium"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </motion.tr>
               ))
@@ -187,6 +224,29 @@ export default function UsuariosPage() {
         onClose={() => setIsEditModalOpen(false)}
         onSuccess={handleEditSuccess}
         user={selectedUser}
+      />
+
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setUserToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Eliminar Usuario"
+        message={
+          <>
+            ¿Estás seguro de que deseas eliminar al usuario <strong>{userToDelete?.email}</strong>?
+            <br /><br />
+            <span className="text-amber-600 text-sm">
+              ⚠️ Esta acción también eliminará el perfil de profesor asociado (si existe) y todas las reservas donde era estudiante.
+            </span>
+          </>
+        }
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        variant="danger"
+        isLoading={isDeleting}
       />
     </div>
   );

@@ -15,7 +15,6 @@ interface CreateSubjectModalProps {
 export function CreateSubjectModal({ isOpen, onClose, onSuccess }: CreateSubjectModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     level: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,7 +27,7 @@ export function CreateSubjectModal({ isOpen, onClose, onSuccess }: CreateSubject
 
     try {
       await subjectService.create(formData);
-      setFormData({ name: '', description: '', level: '' });
+      setFormData({ name: '', level: '' });
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -40,7 +39,7 @@ export function CreateSubjectModal({ isOpen, onClose, onSuccess }: CreateSubject
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setFormData({ name: '', description: '', level: '' });
+      setFormData({ name: '', level: '' });
       setError('');
       onClose();
     }
@@ -79,23 +78,10 @@ export function CreateSubjectModal({ isOpen, onClose, onSuccess }: CreateSubject
             className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="">Seleccionar nivel...</option>
-            <option value="PRIMARIO">Primario</option>
-            <option value="SECUNDARIO">Secundario</option>
-            <option value="UNIVERSITARIO">Universitario</option>
+            <option value="primaria">Primario</option>
+            <option value="secundaria">Secundario</option>
+            <option value="universitaria">Universitario</option>
           </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Descripción
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-            className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            placeholder="Descripción opcional de la materia..."
-          />
         </div>
 
         <div className="flex gap-3 pt-4">

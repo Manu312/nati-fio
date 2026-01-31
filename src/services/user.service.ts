@@ -27,4 +27,12 @@ export const userService = {
   async updateRoles(id: string, data: UpdateUserRolesDto): Promise<User> {
     return apiClient.patch<User>(ENDPOINTS.USERS.UPDATE_ROLES(id), data);
   },
+
+  /**
+   * Eliminar usuario (solo ADMIN)
+   * También elimina el perfil de Teacher asociado y todas las reservas donde era estudiante
+   */
+  async delete(id: string): Promise<void> {
+    return apiClient.delete<void>(ENDPOINTS.USERS.BY_ID(id));
+  },
 };

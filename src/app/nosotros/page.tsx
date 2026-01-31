@@ -3,7 +3,6 @@
 import { ServiceHero } from "@/components/services/ServiceHero";
 import { motion } from "framer-motion";
 import { Award, BookOpen, Star, Users } from "lucide-react";
-import Image from "next/image";
 
 const teachers = [
     {

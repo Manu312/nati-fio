@@ -24,9 +24,13 @@ export function doTimeSlotsOverlap(
 
 /**
  * Obtiene el día de la semana de una fecha (0=Domingo, 1=Lunes, etc.)
+ * Parseamos la fecha manualmente para evitar problemas de zona horaria
  */
 export function getDayOfWeek(date: string): number {
-  return new Date(date).getDay();
+  // Parsear la fecha como YYYY-MM-DD para evitar problemas de timezone
+  // new Date("2026-02-02") se interpreta como UTC y puede dar un día incorrecto
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(year, month - 1, day).getDay();
 }
 
 /**
