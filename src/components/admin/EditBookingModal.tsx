@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { TimeSelect } from '@/components/ui';
 import type { Booking, Teacher, UpdateBookingDto } from '@/types';
 import { teacherService } from '@/services/teacher.service';
 
@@ -176,34 +177,19 @@ export function EditBookingModal({ isOpen, onClose, onSubmit, booking }: EditBoo
 
         {/* Horario */}
         <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
-              Hora Inicio *
-            </label>
-            <input
-              type="time"
-              id="startTime"
-              name="startTime"
-              value={formData.startTime}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
-              Hora Fin *
-            </label>
-            <input
-              type="time"
-              id="endTime"
-              name="endTime"
-              value={formData.endTime}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+          <TimeSelect
+            label="Hora Inicio *"
+            required
+            value={formData.startTime}
+            onChange={(value) => setFormData(prev => ({ ...prev, startTime: value }))}
+          />
+          <TimeSelect
+            label="Hora Fin *"
+            required
+            value={formData.endTime}
+            onChange={(value) => setFormData(prev => ({ ...prev, endTime: value }))}
+            minTime={formData.startTime}
+          />
         </div>
 
         {/* Botones */}

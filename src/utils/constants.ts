@@ -13,6 +13,7 @@ export const ROUTES = {
   ADMIN: {
     HOME: '/admin',
     USUARIOS: '/admin/usuarios',
+    ALUMNOS: '/admin/alumnos',
     PROFESORES: '/admin/profesores',
     MATERIAS: '/admin/materias',
     DISPONIBILIDAD: '/admin/disponibilidad',

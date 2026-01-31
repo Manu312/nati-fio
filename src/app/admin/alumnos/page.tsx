@@ -2,83 +2,95 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { userService } from '@/services';
-import { User, UserRole } from '@/types';
-import { Loader2, Plus, User as UserIcon, Edit, Trash2 } from 'lucide-react';
-import { CreateUserModal } from '@/components/admin/CreateUserModal';
-import { EditUserRolesModal } from '@/components/admin/EditUserRolesModal';
+import { studentService } from '@/services';
+import { Student } from '@/types';
+import { Loader2, Plus, GraduationCap, Edit, Trash2, Mail, School, User } from 'lucide-react';
+import { CreateStudentModal } from '@/components/admin/CreateStudentModal';
+import { EditStudentModal } from '@/components/admin/EditStudentModal';
 import { Alert } from '@/components/ui/Alert';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { format } from '@/utils/format';
 
-export default function UsuariosPage() {
-  const [users, setUsers] = useState<User[]>([]);
+export default function AlumnosPage() {
+  const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    loadUsers();
+    loadStudents();
   }, []);
 
-  const loadUsers = async () => {
+  const loadStudents = async () => {
     try {
       setIsLoading(true);
       setError('');
-      const data = await userService.getAll();
-      setUsers(data);
+      const data = await studentService.getAll();
+      setStudents(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar usuarios');
+      setError(err instanceof Error ? err.message : 'Error al cargar alumnos');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCreateSuccess = () => {
-    setSuccessMessage('Usuario creado exitosamente');
-    loadUsers();
+    setSuccessMessage('Alumno creado exitosamente');
+    loadStudents();
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const handleEditSuccess = () => {
-    setSuccessMessage('Roles actualizados exitosamente');
-    loadUsers();
+    setSuccessMessage('Alumno actualizado exitosamente');
+    loadStudents();
     setTimeout(() => setSuccessMessage(''), 3000);
   };
 
-  const handleEditUser = (user: User) => {
-    setSelectedUser(user);
+  const handleEditStudent = (student: Student) => {
+    setSelectedStudent(student);
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteClick = (user: User) => {
-    setUserToDelete(user);
+  const handleDeleteClick = (student: Student) => {
+    setStudentToDelete(student);
     setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!userToDelete) return;
+    if (!studentToDelete) return;
     
     try {
       setIsDeleting(true);
-      await userService.delete(userToDelete.id);
-      setSuccessMessage('Usuario eliminado exitosamente');
+      await studentService.delete(studentToDelete.id);
+      setSuccessMessage('Alumno eliminado exitosamente');
       setIsDeleteDialogOpen(false);
-      setUserToDelete(null);
-      loadUsers();
+      setStudentToDelete(null);
+      loadStudents();
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar usuario');
+      setError(err instanceof Error ? err.message : 'Error al eliminar alumno');
       setIsDeleteDialogOpen(false);
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const getStudentName = (student: Student) => {
+    const parts = [student.firstName];
+    if (student.lastName) parts.push(student.lastName);
+    return parts.join(' ');
+  };
+
+  const getTutorName = (student: Student) => {
+    if (!student.tutorFirstName) return null;
+    const parts = [student.tutorFirstName];
+    if (student.tutorLastName) parts.push(student.tutorLastName);
+    return parts.join(' ');
   };
 
   if (isLoading) {
@@ -93,8 +105,8 @@ export default function UsuariosPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Usuarios</h1>
-          <p className="text-gray-600 mt-1 text-sm lg:text-base">Gestiona los usuarios del sistema</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Alumnos</h1>
+          <p className="text-gray-600 mt-1 text-sm lg:text-base">Gestiona los alumnos registrados</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -103,7 +115,7 @@ export default function UsuariosPage() {
           className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
-          Nuevo Usuario
+          Nuevo Alumno
         </motion.button>
       </div>
 
@@ -122,15 +134,15 @@ export default function UsuariosPage() {
 
       {/* Vista móvil - Cards */}
       <div className="lg:hidden space-y-4">
-        {users.length === 0 ? (
+        {students.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
-            <UserIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No hay usuarios registrados</p>
+            <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No hay alumnos registrados</p>
           </div>
         ) : (
-          users.map((user, index) => (
+          students.map((student, index) => (
             <motion.div
-              key={user.id}
+              key={student.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -138,43 +150,49 @@ export default function UsuariosPage() {
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <UserIcon className="w-5 h-5 text-blue-600" />
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <GraduationCap className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900 text-sm break-all">{user.email}</p>
-                    <p className="text-xs text-gray-500">{user.createdAt ? format.date(user.createdAt) : '-'}</p>
+                    <p className="font-medium text-gray-900">{getStudentName(student)}</p>
+                    {student.grade && (
+                      <p className="text-xs text-gray-500">Grado: {student.grade}</p>
+                    )}
                   </div>
                 </div>
               </div>
               
-              <div className="flex flex-wrap gap-1 mb-3">
-                {user.roles.map((role) => (
-                  <span
-                    key={role}
-                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                      role === UserRole.ADMIN
-                        ? 'bg-purple-100 text-purple-700'
-                        : role === UserRole.PROFESOR
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-green-100 text-green-700'
-                    }`}
-                  >
-                    {role}
-                  </span>
-                ))}
+              <div className="space-y-2 mb-3 text-sm text-gray-600">
+                {student.school && (
+                  <div className="flex items-center gap-2">
+                    <School className="w-4 h-4 text-gray-400" />
+                    <span>{student.school}</span>
+                  </div>
+                )}
+                {student.parentEmail && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <span className="break-all">{student.parentEmail}</span>
+                  </div>
+                )}
+                {getTutorName(student) && (
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <span>Tutor: {getTutorName(student)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleEditUser(user)}
+                  onClick={() => handleEditStudent(student)}
                   className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
                 >
                   <Edit className="w-4 h-4" />
                   Editar
                 </button>
                 <button
-                  onClick={() => handleDeleteClick(user)}
+                  onClick={() => handleDeleteClick(student)}
                   className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-sm text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -192,13 +210,16 @@ export default function UsuariosPage() {
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Usuario
+                Alumno
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Roles
+                Grado / Escuela
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fecha de Creación
+                Tutor
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Email Padre/Madre
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Acciones
@@ -206,17 +227,17 @@ export default function UsuariosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {users.length === 0 ? (
+            {students.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-12 text-center">
-                  <UserIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No hay usuarios registrados</p>
+                <td colSpan={5} className="px-6 py-12 text-center">
+                  <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No hay alumnos registrados</p>
                 </td>
               </tr>
             ) : (
-              users.map((user, index) => (
+              students.map((student, index) => (
                 <motion.tr
-                  key={user.id}
+                  key={student.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: index * 0.05 }}
@@ -224,47 +245,47 @@ export default function UsuariosPage() {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <UserIcon className="w-5 h-5 text-blue-600" />
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <GraduationCap className="w-5 h-5 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{user.email}</p>
-                        <p className="text-sm text-gray-500">{user.id}</p>
+                        <p className="font-medium text-gray-900">{getStudentName(student)}</p>
+                        {student.user?.email && (
+                          <p className="text-sm text-gray-500">{student.user.email}</p>
+                        )}
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex gap-2">
-                      {user.roles.map((role) => (
-                        <span
-                          key={role}
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            role === UserRole.ADMIN
-                              ? 'bg-purple-100 text-purple-700'
-                              : role === UserRole.PROFESOR
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}
-                        >
-                          {role}
-                        </span>
-                      ))}
+                    <div className="text-sm">
+                      {student.grade && (
+                        <p className="text-gray-900">{student.grade}</p>
+                      )}
+                      {student.school && (
+                        <p className="text-gray-500">{student.school}</p>
+                      )}
+                      {!student.grade && !student.school && (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.createdAt ? format.date(user.createdAt) : '-'}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {getTutorName(student) || <span className="text-gray-400">-</span>}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {student.parentEmail || <span className="text-gray-400">-</span>}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-3">
                       <button
-                        onClick={() => handleEditUser(user)}
+                        onClick={() => handleEditStudent(student)}
                         className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-900 font-medium"
                       >
                         <Edit className="w-4 h-4" />
                         Editar
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(user)}
+                        onClick={() => handleDeleteClick(student)}
                         className="inline-flex items-center gap-1 text-red-600 hover:text-red-900 font-medium"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -280,33 +301,33 @@ export default function UsuariosPage() {
       </div>
 
       {/* Modals */}
-      <CreateUserModal
+      <CreateStudentModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
       />
       
-      <EditUserRolesModal
+      <EditStudentModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSuccess={handleEditSuccess}
-        user={selectedUser}
+        student={selectedStudent}
       />
 
       <ConfirmDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => {
           setIsDeleteDialogOpen(false);
-          setUserToDelete(null);
+          setStudentToDelete(null);
         }}
         onConfirm={handleDeleteConfirm}
-        title="Eliminar Usuario"
+        title="Eliminar Alumno"
         message={
           <>
-            ¿Estás seguro de que deseas eliminar al usuario <strong>{userToDelete?.email}</strong>?
+            ¿Estás seguro de que deseas eliminar al alumno <strong>{studentToDelete ? getStudentName(studentToDelete) : ''}</strong>?
             <br /><br />
             <span className="text-amber-600 text-sm">
-              ⚠️ Esta acción también eliminará el perfil de profesor asociado (si existe) y todas las reservas donde era estudiante.
+              ⚠️ Esta acción también eliminará todas las reservas asociadas a este alumno.
             </span>
           </>
         }

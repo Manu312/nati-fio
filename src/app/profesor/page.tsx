@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { UserRole, BookingStatus } from '@/types';
-import type { Booking, Availability } from '@/types';
+import type { Booking, Availability, Teacher } from '@/types';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, Users, CheckCircle } from 'lucide-react';
 import { bookingService } from '@/services/booking.service';
 import { availabilityService } from '@/services/availability.service';
+import { teacherService } from '@/services';
 import { format, parseISO, isToday, isThisWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -38,6 +39,7 @@ export default function ProfesorDashboard() {
   const { isLoading, user } = useProtectedRoute({ requiredRoles: [UserRole.PROFESOR] });
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
+  const [teacherId, setTeacherId] = useState<string>('');
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
@@ -49,14 +51,32 @@ export default function ProfesorDashboard() {
   const loadData = async () => {
     try {
       setIsLoadingData(true);
+      
+      // Primero obtener el teacherId del usuario actual
+      const teachers = await teacherService.getAll();
+      const myTeacher = teachers.find((t: Teacher) => t.userId === user?.id);
+      
+      if (!myTeacher) {
+        setIsLoadingData(false);
+        return;
+      }
+      
+      setTeacherId(myTeacher.id);
+      
+      // Cargar datos y filtrar por el teacherId
       const [bookingsData, availabilityData] = await Promise.all([
         bookingService.getAll(),
         availabilityService.getAll(),
       ]);
-      setBookings(bookingsData);
-      setAvailabilities(availabilityData);
+      
+      // Filtrar solo las reservas y disponibilidad de este profesor
+      const myBookings = bookingsData.filter((b: Booking) => b.teacherId === myTeacher.id);
+      const myAvailabilities = availabilityData.filter((a: Availability) => a.teacherId === myTeacher.id);
+      
+      setBookings(myBookings);
+      setAvailabilities(myAvailabilities);
     } catch (error) {
-      // Silently handle error
+      console.error('Error loading data:', error);
     } finally {
       setIsLoadingData(false);
     }

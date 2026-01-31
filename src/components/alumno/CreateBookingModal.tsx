@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
+import { TimeSelect } from '@/components/ui';
 import { bookingService, availabilityService } from '@/services';
 import { Teacher, Availability, Booking } from '@/types';
 import { useAuth } from '@/hooks';
 import { validation, format } from '@/utils';
 import { validateBooking, getAvailableSlots } from '@/utils/booking-validation';
-import { Calendar, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, CheckCircle, XCircle } from 'lucide-react';
 
 interface CreateBookingModalProps {
   isOpen: boolean;
@@ -227,35 +228,20 @@ export function CreateBookingModal({
 
           {/* Time Range */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="w-4 h-4 inline mr-1" />
-                Hora de Inicio *
-              </label>
-              <input
-                id="startTime"
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
+            <TimeSelect
+              label="Hora de Inicio *"
+              required
+              value={startTime}
+              onChange={setStartTime}
+            />
 
-            <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-2">
-                <Clock className="w-4 h-4 inline mr-1" />
-                Hora de Fin *
-              </label>
-              <input
-                id="endTime"
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full px-4 py-2 text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
+            <TimeSelect
+              label="Hora de Fin *"
+              required
+              value={endTime}
+              onChange={setEndTime}
+              minTime={startTime}
+            />
           </div>
 
           {/* Info */}

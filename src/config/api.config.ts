@@ -44,6 +44,11 @@ export const ENDPOINTS = {
     BY_ID: (id: string) => `/bookings/${id}`,
     CONFIRM: (id: string) => `/bookings/${id}/confirm`,
   },
+  // Students
+  STUDENTS: {
+    BASE: '/students',
+    BY_ID: (id: string) => `/students/${id}`,
+  },
 } as const;
 
 export const STORAGE_KEYS = {

@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Clock, Calendar, Plus, Trash2 } from 'lucide-react';
+import { X, Calendar, Plus, Trash2 } from 'lucide-react';
 import { availabilityService } from '@/services/availability.service';
 import { teacherService } from '@/services/teacher.service';
+import { TimeSelect } from '@/components/ui';
 import type { CreateAvailabilityDto, Teacher, DayOfWeek } from '@/types';
 
 interface CreateAvailabilityModalProps {
@@ -307,41 +308,24 @@ export function CreateAvailabilityModal({ isOpen, onClose, onSuccess, preselecte
 
                     {/* Horarios */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Inicio
-                        </label>
-                        <div className="relative">
-                          <Clock className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                          <input
-                            type="time"
-                            required
-                            value={slot.startTime}
-                            onChange={(e) =>
-                              updateTimeSlot(slot.id, 'startTime', e.target.value)
-                            }
-                            className="w-full pl-8 pr-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
+                      <TimeSelect
+                        label="Inicio"
+                        required
+                        value={slot.startTime}
+                        onChange={(value) =>
+                          updateTimeSlot(slot.id, 'startTime', value)
+                        }
+                      />
 
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Fin
-                        </label>
-                        <div className="relative">
-                          <Clock className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                          <input
-                            type="time"
-                            required
-                            value={slot.endTime}
-                            onChange={(e) =>
-                              updateTimeSlot(slot.id, 'endTime', e.target.value)
-                            }
-                            className="w-full pl-8 pr-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
+                      <TimeSelect
+                        label="Fin"
+                        required
+                        value={slot.endTime}
+                        onChange={(value) =>
+                          updateTimeSlot(slot.id, 'endTime', value)
+                        }
+                        minTime={slot.startTime}
+                      />
                     </div>
                   </div>
                 ))}

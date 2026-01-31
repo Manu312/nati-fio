@@ -48,6 +48,7 @@ export default function ReservasAdminPage() {
     try {
       setIsLoadingData(true);
       const data = await bookingService.getAll();
+      console.log('Bookings data:', data); // Debug: ver estructura de datos
       setBookings(data);
     } catch (error) {
       console.error('Error loading bookings:', error);
@@ -102,10 +103,10 @@ export default function ReservasAdminPage() {
   };
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Todas las Reservas</h1>
-        <p className="text-gray-600 mt-2">Vista completa del sistema de reservas</p>
+    <div className="p-4 lg:p-8">
+      <div className="mb-6 lg:mb-8">
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Todas las Reservas</h1>
+        <p className="text-gray-600 mt-1 lg:mt-2 text-sm lg:text-base">Vista completa del sistema de reservas</p>
       </div>
 
       {isLoadingData ? (
@@ -117,98 +118,153 @@ export default function ReservasAdminPage() {
           <p className="text-gray-500">No hay reservas en el sistema</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Alumno
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Profesor
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Fecha y Hora
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {bookings.map((booking, index) => (
-                <motion.tr
-                  key={booking.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
+        <>
+          {/* Vista móvil - Cards */}
+          <div className="lg:hidden space-y-4">
+            {bookings.map((booking, index) => (
+              <motion.div
+                key={booking.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white rounded-lg shadow p-4"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <p className="font-medium text-gray-900">
                       {booking.student?.firstName} {booking.student?.lastName}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {booking.student?.user?.email}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {booking.teacher?.firstName} {booking.teacher?.lastName}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {format(parseBookingDateTime(booking.date, booking.startTime), "dd 'de' MMMM, yyyy", { locale: es })}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {format(parseBookingDateTime(booking.date, booking.startTime), 'HH:mm', { locale: es })} - {' '}
-                      {format(parseBookingDateTime(booking.date, booking.endTime), 'HH:mm', { locale: es })}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      statusMap[booking.status]?.className || 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {statusMap[booking.status]?.label || booking.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
-                    {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleEdit(booking)}
-                      >
-                        Editar
-                      </Button>
-                    )}
-                    {booking.status === BookingStatus.PENDING && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleConfirm(booking.id)}
-                      >
-                        Confirmar
-                      </Button>
-                    )}
-                    {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleCancel(booking.id)}
-                      >
-                        Cancelar
-                      </Button>
-                    )}
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      con {booking.teacher?.firstName} {booking.teacher?.lastName}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    statusMap[booking.status]?.className || 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {statusMap[booking.status]?.label || booking.status}
+                  </span>
+                </div>
+                
+                <div className="text-sm text-gray-600 mb-3">
+                  <p>📅 {format(parseBookingDateTime(booking.date, booking.startTime), "EEE d MMM", { locale: es })}</p>
+                  <p>⏰ {format(parseBookingDateTime(booking.date, booking.startTime), 'HH:mm', { locale: es })} - {format(parseBookingDateTime(booking.date, booking.endTime), 'HH:mm', { locale: es })}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
+                    <Button variant="secondary" size="sm" onClick={() => handleEdit(booking)}>
+                      Editar
+                    </Button>
+                  )}
+                  {booking.status === BookingStatus.PENDING && (
+                    <Button variant="primary" size="sm" onClick={() => handleConfirm(booking.id)}>
+                      Confirmar
+                    </Button>
+                  )}
+                  {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
+                    <Button variant="danger" size="sm" onClick={() => handleCancel(booking.id)}>
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Vista desktop - Tabla */}
+          <div className="hidden lg:block bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Alumno
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Profesor
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Fecha y Hora
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Estado
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {bookings.map((booking, index) => (
+                  <motion.tr
+                    key={booking.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {booking.student?.firstName} {booking.student?.lastName}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {booking.student?.user?.email}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {booking.teacher?.firstName} {booking.teacher?.lastName}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {format(parseBookingDateTime(booking.date, booking.startTime), "dd 'de' MMMM, yyyy", { locale: es })}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {format(parseBookingDateTime(booking.date, booking.startTime), 'HH:mm', { locale: es })} - {' '}
+                        {format(parseBookingDateTime(booking.date, booking.endTime), 'HH:mm', { locale: es })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        statusMap[booking.status]?.className || 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {statusMap[booking.status]?.label || booking.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                      {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleEdit(booking)}
+                        >
+                          Editar
+                        </Button>
+                      )}
+                      {booking.status === BookingStatus.PENDING && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleConfirm(booking.id)}
+                        >
+                          Confirmar
+                        </Button>
+                      )}
+                      {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleCancel(booking.id)}
+                        >
+                          Cancelar
+                        </Button>
+                      )}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Modal de edición */}

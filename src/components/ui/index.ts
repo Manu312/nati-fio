@@ -8,3 +8,4 @@ export * from './Modal';
 export * from './Button';
 export * from './Alert';
 export * from './PanelSwitcher';
+export * from './TimeSelect';

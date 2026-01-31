@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+import { useAuth } from '@/hooks';
 import { UserRole, BookingStatus } from '@/types';
-import type { Booking } from '@/types';
+import type { Booking, Teacher } from '@/types';
 import { bookingService } from '@/services/booking.service';
+import { teacherService } from '@/services';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -37,19 +39,33 @@ const statusMap: Record<string, { label: string; className: string }> = {
 
 export default function ProfesorReservasPage() {
   const { isLoading } = useProtectedRoute({ requiredRoles: [UserRole.PROFESOR] });
+  const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
-    loadBookings();
-  }, []);
+    if (user) {
+      loadBookings();
+    }
+  }, [user]);
 
   const loadBookings = async () => {
     try {
       setIsLoadingData(true);
-      // Aquí se debería filtrar solo las reservas del profesor actual
-      const data = await bookingService.getAll();
-      setBookings(data);
+      
+      // Obtener el teacherId del profesor actual
+      const teachers = await teacherService.getAll();
+      const myTeacher = teachers.find((t: Teacher) => t.userId === user?.id);
+      
+      if (!myTeacher) {
+        setIsLoadingData(false);
+        return;
+      }
+      
+      // Filtrar solo las reservas del profesor actual
+      const allBookings = await bookingService.getAll();
+      const myBookings = allBookings.filter((b: Booking) => b.teacherId === myTeacher.id);
+      setBookings(myBookings);
     } catch (error) {
       console.error('Error loading bookings:', error);
     } finally {
