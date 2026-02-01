@@ -36,7 +36,7 @@ export default function BookingPage() {
 
     const generateWhatsAppLink = () => {
         const text = `Hola Naty & Fio! 👋%0A%0AQuiero reservar una clase.%0A%0A*Servicio:* ${services.find(s => s.id === formData.service)?.name}%0A*Materia:* ${subjects.find(s => s.id === formData.subject)?.name}%0A*Nombre:* ${formData.name}%0A*Mensaje:* ${formData.message}`;
-        return `https://wa.me/5491112345678?text=${text}`;
+        return `https://wa.me/5491178268810?text=${text}`;
     };
 
     // Si el usuario está autenticado y es alumno, redirigir al panel de alumno

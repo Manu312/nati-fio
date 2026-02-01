@@ -8,8 +8,10 @@ import { UserRole, BookingStatus } from '@/types';
 import type { Booking, Teacher } from '@/types';
 import { bookingService } from '@/services/booking.service';
 import { teacherService } from '@/services';
+import { BookingCalendar } from '@/components/booking/BookingCalendar';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Calendar, List } from 'lucide-react';
 
 // Función auxiliar para parsear fecha y hora de forma segura
 const parseBookingDateTime = (date: string, time: string): Date => {
@@ -42,6 +44,7 @@ export default function ProfesorReservasPage() {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   useEffect(() => {
     if (user) {
@@ -82,10 +85,39 @@ export default function ProfesorReservasPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Mis Reservas</h1>
-        <p className="text-gray-600 mt-2">Clases programadas con tus alumnos</p>
+    <div className="p-4 lg:p-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 lg:mb-8">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Mis Reservas</h1>
+          <p className="text-gray-600 mt-1 lg:mt-2 text-sm lg:text-base">Clases programadas con tus alumnos</p>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex bg-gray-100 rounded-lg p-1 self-start">
+          <button
+            onClick={() => setViewMode('calendar')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              viewMode === 'calendar'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Calendario</span>
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              viewMode === 'list'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            <span>Lista</span>
+          </button>
+        </div>
       </div>
 
       {isLoadingData ? (
@@ -94,8 +126,16 @@ export default function ProfesorReservasPage() {
         </div>
       ) : bookings.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
-          <p className="text-gray-500">No tienes reservas programadas</p>
+          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500 text-lg">No tienes reservas programadas</p>
+          <p className="text-gray-400 text-sm mt-2">Las reservas de tus alumnos aparecerán aquí</p>
         </div>
+      ) : viewMode === 'calendar' ? (
+        /* Calendar View - Read Only for Profesor */
+        <BookingCalendar
+          bookings={bookings}
+          isAdmin={false}
+        />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {bookings.map((booking, index) => (

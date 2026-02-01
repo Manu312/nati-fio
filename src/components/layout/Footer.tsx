@@ -39,6 +39,10 @@ export function Footer() {
                                 <Phone className="w-4 h-4 text-primary" />
                                 <span>+54 9 11 6648-3929</span>
                             </li>
+                            <li className="flex items-center gap-2">
+                                <Phone className="w-4 h-4 text-primary" />
+                                <span>+54 9 11 7826-8810</span>
+                            </li>
                             <li className="flex gap-4 mt-4">
                                 <Link href="https://www.instagram.com/insti_natyfiore/" className="p-2 rounded-full bg-white/5 hover:bg-primary/20 hover:text-primary transition-colors">
                                     <Instagram className="w-5 h-5" />
