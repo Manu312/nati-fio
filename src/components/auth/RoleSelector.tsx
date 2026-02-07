@@ -44,7 +44,6 @@ export function RoleSelector({ roles, onSelectRole }: RoleSelectorProps) {
   };
 
   const handleSelectRole = (path: string) => {
-    console.log('✅ Usuario seleccionó:', path);
     onSelectRole(path);
     router.push(path);
   };

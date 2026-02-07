@@ -17,18 +17,39 @@ const navItems = [
 
 export function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
+    const [isHidden, setIsHidden] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
     const { user, isAuthenticated, logout } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
+        let lastScrollY = window.scrollY;
+
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
+            const currentScrollY = window.scrollY;
+            setIsScrolled(currentScrollY > 20);
+
+            // Ocultar al bajar, mostrar al subir
+            if (currentScrollY > 80 && currentScrollY > lastScrollY) {
+                setIsHidden(true);
+            } else {
+                setIsHidden(false);
+            }
+
+            lastScrollY = currentScrollY;
+
+            // Cerrar menús al hacer scroll
+            if (showUserMenu) {
+                setShowUserMenu(false);
+            }
+            if (isMobileMenuOpen) {
+                setIsMobileMenuOpen(false);
+            }
         };
-        window.addEventListener("scroll", handleScroll);
+        window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    }, [showUserMenu, isMobileMenuOpen]);
 
     const handleLogout = () => {
         logout();
@@ -47,7 +68,8 @@ export function Header() {
         <header
             className={cn(
                 "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent",
-                isScrolled ? "glass bg-background/60 py-3" : "bg-transparent py-5"
+                isScrolled ? "glass bg-background/80 py-3 shadow-lg shadow-black/10" : "bg-transparent py-5",
+                isHidden && !isMobileMenuOpen ? "-translate-y-full" : "translate-y-0"
             )}
         >
             <div className="container mx-auto px-4 md:px-6 flex items-center justify-between">
@@ -137,6 +159,7 @@ export function Header() {
                     <button
                         className="md:hidden p-2 text-gray-300 hover:text-white"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        aria-label={isMobileMenuOpen ? "Cerrar menú de navegación" : "Abrir menú de navegación"}
                     >
                         {isMobileMenuOpen ? <X /> : <Menu />}
                     </button>

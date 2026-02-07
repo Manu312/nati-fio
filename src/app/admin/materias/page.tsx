@@ -9,6 +9,8 @@ import { subjectService } from '@/services/subject.service';
 import { Button } from '@/components/ui/Button';
 import { CreateSubjectModal } from '@/components/admin/CreateSubjectModal';
 import { EditSubjectModal } from '@/components/admin/EditSubjectModal';
+import { ConfirmDialog } from '@/components/ui';
+import { useConfirm } from '@/hooks';
 
 // Mapeo de niveles para mostrar de forma legible
 const levelLabels: Record<string, { label: string; className: string }> = {
@@ -24,6 +26,8 @@ export default function MateriasPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [error, setError] = useState('');
+  const { confirm, confirmProps } = useConfirm();
 
   useEffect(() => {
     loadSubjects();
@@ -42,13 +46,19 @@ export default function MateriasPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar esta materia?')) return;
+    const ok = await confirm({
+      title: 'Eliminar materia',
+      message: '¿Estás seguro de eliminar esta materia? Esta acción no se puede deshacer.',
+      confirmText: 'Sí, eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await subjectService.delete(id);
       loadSubjects();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al eliminar la materia');
+      setError(error.response?.data?.message || 'Error al eliminar la materia');
     }
   };
 
@@ -146,6 +156,17 @@ export default function MateriasPage() {
         onSuccess={loadSubjects}
         subject={selectedSubject}
       />
+
+      <ConfirmDialog {...confirmProps} />
+
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg shadow-lg z-50">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm">{error}</span>
+            <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">×</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

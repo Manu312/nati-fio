@@ -343,6 +343,7 @@ export function BookingCalendar({
                 <button
                   onClick={() => setSelectedBooking(null)}
                   className="p-1.5 hover:bg-black/10 rounded-lg transition-colors"
+                  aria-label="Cerrar detalle de reserva"
                 >
                   <X className="w-5 h-5 text-gray-600" />
                 </button>
@@ -463,12 +464,14 @@ export function BookingCalendar({
           <button
             onClick={navigatePrev}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Mes anterior"
           >
             <ChevronLeft className="w-5 h-5 text-gray-600" />
           </button>
           <button
             onClick={navigateNext}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Mes siguiente"
           >
             <ChevronRight className="w-5 h-5 text-gray-600" />
           </button>

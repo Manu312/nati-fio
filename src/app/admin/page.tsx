@@ -7,8 +7,10 @@ import { userService } from '@/services/user.service';
 import { teacherService } from '@/services/teacher.service';
 import { bookingService } from '@/services/booking.service';
 import { subjectService } from '@/services/subject.service';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalTeachers: 0,
@@ -91,22 +93,56 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Acciones Rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left">
+          <button 
+            onClick={() => router.push('/admin/usuarios')}
+            className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left cursor-pointer"
+          >
             <Users className="w-6 h-6 text-blue-500 mb-2" />
             <p className="font-medium text-gray-900">Gestionar Usuarios</p>
             <p className="text-sm text-gray-500">Ver y editar usuarios</p>
           </button>
           
-          <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors text-left">
+          <button 
+            onClick={() => router.push('/admin/profesores')}
+            className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors text-left cursor-pointer"
+          >
             <GraduationCap className="w-6 h-6 text-purple-500 mb-2" />
             <p className="font-medium text-gray-900">Gestionar Profesores</p>
             <p className="text-sm text-gray-500">Agregar y editar profesores</p>
           </button>
           
-          <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors text-left">
+          <button 
+            onClick={() => router.push('/admin/materias')}
+            className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors text-left cursor-pointer"
+          >
             <BookOpen className="w-6 h-6 text-green-500 mb-2" />
             <p className="font-medium text-gray-900">Gestionar Materias</p>
             <p className="text-sm text-gray-500">Agregar y editar materias</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Nueva sección: Asignación de Clases */}
+      <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl shadow-sm p-6 border border-blue-100">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Asignar Clases</h2>
+        <p className="text-gray-600 text-sm mb-4">Gestiona las clases directamente y crea horarios recurrentes</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button 
+            onClick={() => router.push('/admin/reservas')}
+            className="p-4 bg-white rounded-lg hover:shadow-md transition-all text-left border border-transparent hover:border-blue-300"
+          >
+            <Calendar className="w-6 h-6 text-blue-600 mb-2" />
+            <p className="font-medium text-gray-900">Ver Todas las Reservas</p>
+            <p className="text-sm text-gray-500 mt-1">Gestiona el calendario completo</p>
+          </button>
+          
+          <button 
+            onClick={() => router.push('/admin/reservas')}
+            className="p-4 bg-white rounded-lg hover:shadow-md transition-all text-left border border-transparent hover:border-purple-300"
+          >
+            <Calendar className="w-6 h-6 text-purple-600 mb-2" />
+            <p className="font-medium text-gray-900">Clases Recurrentes</p>
+            <p className="text-sm text-gray-500 mt-1">Crea y gestiona horarios mensuales</p>
           </button>
         </div>
       </div>

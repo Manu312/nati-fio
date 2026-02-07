@@ -6,11 +6,14 @@ import { bookingService } from '@/services';
 import { Booking } from '@/types';
 import { Loader2, Calendar, Clock } from 'lucide-react';
 import { format } from '@/utils/format';
+import { useConfirm } from '@/hooks';
+import { ConfirmDialog } from '@/components/ui';
 
 export default function MisReservasPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const { confirm, confirmProps } = useConfirm();
 
   useEffect(() => {
     loadBookings();
@@ -29,7 +32,13 @@ export default function MisReservasPage() {
   };
 
   const handleCancel = async (id: string) => {
-    if (!confirm('¿Estás seguro de que quieres cancelar esta reserva?')) return;
+    const ok = await confirm({
+      title: 'Cancelar reserva',
+      message: '¿Estás seguro de que quieres cancelar esta reserva?',
+      confirmText: 'Sí, cancelar',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await bookingService.cancel(id);
@@ -138,6 +147,7 @@ export default function MisReservasPage() {
           ))}
         </div>
       )}
+      <ConfirmDialog {...confirmProps} />
     </div>
   );
 }

@@ -69,8 +69,9 @@ export function Services() {
                             <Link
                                 href={service.href}
                                 className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-primary transition-colors"
+                                aria-label={`Ver más sobre ${service.title}`}
                             >
-                                Ver más
+                                Ver más sobre {service.title}
                                 <ArrowRight className="w-4 h-4" />
                             </Link>
                         </motion.div>

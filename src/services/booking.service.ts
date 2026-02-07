@@ -48,4 +48,32 @@ export const bookingService = {
   async confirm(id: string): Promise<Booking> {
     return apiClient.patch<Booking>(ENDPOINTS.BOOKINGS.CONFIRM(id));
   },
+
+  /**
+   * Asignar clase directamente a alumno (solo Admin)
+   */
+  async adminAssign(data: import('@/types').AdminAssignBookingDto): Promise<Booking> {
+    return apiClient.post<Booking>(ENDPOINTS.BOOKINGS.ADMIN_ASSIGN, data);
+  },
+
+  /**
+   * Crear clases mensuales recurrentes (solo Admin)
+   */
+  async createMonthly(data: import('@/types').MonthlyBookingDto): Promise<import('@/types').MonthlyBookingResult> {
+    return apiClient.post<import('@/types').MonthlyBookingResult>(ENDPOINTS.BOOKINGS.MONTHLY, data);
+  },
+
+  /**
+   * Obtener grupos recurrentes
+   */
+  async getRecurringGroups(): Promise<import('@/types').RecurringGroup[]> {
+    return apiClient.get<import('@/types').RecurringGroup[]>(ENDPOINTS.BOOKINGS.RECURRING_GROUPS);
+  },
+
+  /**
+   * Renovar grupo recurrente al mes siguiente
+   */
+  async renewMonthly(groupId: string): Promise<import('@/types').MonthlyBookingResult> {
+    return apiClient.post<import('@/types').MonthlyBookingResult>(ENDPOINTS.BOOKINGS.RENEW_MONTHLY(groupId));
+  },
 };

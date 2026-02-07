@@ -94,7 +94,6 @@ export function EditAvailabilityModal({ isOpen, onClose, onSuccess, availability
         updateData.teacherId = formData.teacherId;
       }
 
-      console.log('Updating availability with data:', updateData);
       
       await availabilityService.update(availability.id, updateData);
       onSuccess();
@@ -150,6 +149,7 @@ export function EditAvailabilityModal({ isOpen, onClose, onSuccess, availability
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-700"
+                  aria-label="Cerrar"
                 >
                   <X className="w-5 h-5" />
                 </button>

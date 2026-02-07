@@ -279,6 +279,7 @@ export function CreateAvailabilityModal({ isOpen, onClose, onSuccess, preselecte
                           type="button"
                           onClick={() => removeTimeSlot(slot.id)}
                           className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          aria-label="Eliminar franja horaria"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

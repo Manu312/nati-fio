@@ -59,6 +59,7 @@ export function Alert({ variant, children, onClose, className = '' }: AlertProps
         <button
           onClick={onClose}
           className="flex-shrink-0 p-1 hover:bg-white/50 rounded transition-colors"
+          aria-label="Cerrar alerta"
         >
           <X className="w-4 h-4" />
         </button>

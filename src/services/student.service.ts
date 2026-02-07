@@ -11,8 +11,9 @@ export const studentService = {
   /**
    * Obtiene todos los alumnos
    */
-  async getAll(): Promise<Student[]> {
-    return apiClient.get<Student[]>(ENDPOINTS.STUDENTS.BASE);
+  async getAll(search?: string): Promise<Student[]> {
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
+    return apiClient.get<Student[]>(`${ENDPOINTS.STUDENTS.BASE}${params}`);
   },
 
   /**

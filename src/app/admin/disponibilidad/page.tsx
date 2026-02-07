@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/Button';
 import { Plus, Clock, Trash2 } from 'lucide-react';
 import { CreateAvailabilityModal } from '@/components/admin/CreateAvailabilityModal';
 import { EditAvailabilityModal } from '@/components/admin/EditAvailabilityModal';
+import { ConfirmDialog } from '@/components/ui';
+import { useConfirm } from '@/hooks';
+import { useToast } from '@/contexts/ToastContext';
 
 // Días de la semana ordenados (Lun-Dom)
 const DAYS_ORDER = [1, 2, 3, 4, 5, 6, 0];
@@ -40,6 +43,8 @@ export default function DisponibilidadPage() {
   const [selectedAvailability, setSelectedAvailability] = useState<Availability | null>(null);
   const [preselectedTeacherId, setPreselectedTeacherId] = useState<string | null>(null);
   const [preselectedDay, setPreselectedDay] = useState<number | null>(null);
+  const { confirm, confirmProps } = useConfirm();
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadData();
@@ -100,13 +105,19 @@ export default function DisponibilidadPage() {
   }, [availabilities, teachers]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar este horario?')) return;
+    const ok = await confirm({
+      title: 'Eliminar horario',
+      message: '¿Estás seguro de eliminar este horario? Esta acción no se puede deshacer.',
+      confirmText: 'Sí, eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await availabilityService.delete(id);
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al eliminar disponibilidad');
+      showToast('error', error.response?.data?.message || 'Error al eliminar disponibilidad');
     }
   };
 
@@ -239,6 +250,7 @@ export default function DisponibilidadPage() {
                                   handleDelete(avail.id);
                                 }}
                                 className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600"
+                                aria-label="Eliminar disponibilidad"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
@@ -281,6 +293,8 @@ export default function DisponibilidadPage() {
         onSuccess={handleEditSuccess}
         availability={selectedAvailability}
       />
+
+      <ConfirmDialog {...confirmProps} />
     </div>
   );
 }

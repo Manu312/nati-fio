@@ -56,6 +56,7 @@ export function Toast({ type, message, onClose }: ToastProps) {
         <button
           onClick={onClose}
           className={`${iconColor} hover:opacity-70 transition-opacity`}
+          aria-label="Cerrar notificación"
         >
           <X className="w-4 h-4" />
         </button>

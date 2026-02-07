@@ -11,7 +11,24 @@ interface MobileMenuProps {
 }
 
 export function MobileMenu({ isOpen, onClose, children }: MobileMenuProps) {
-  // Cerrar al cambiar de ruta
+  // Cerrar al hacer scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [isOpen, onClose]);
+
+  // Controlar overflow del body
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -49,6 +66,7 @@ export function MobileMenu({ isOpen, onClose, children }: MobileMenuProps) {
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg z-10"
+                aria-label="Cerrar menú"
               >
                 <X className="w-5 h-5" />
               </button>

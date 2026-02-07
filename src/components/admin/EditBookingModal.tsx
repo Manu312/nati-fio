@@ -4,21 +4,26 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { TimeSelect } from '@/components/ui';
+import { ConfirmDialog } from '@/components/ui';
 import type { Booking, Teacher, UpdateBookingDto } from '@/types';
 import { teacherService } from '@/services/teacher.service';
+import { useConfirm } from '@/hooks';
 
 interface EditBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (id: string, data: UpdateBookingDto) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   booking: Booking | null;
 }
 
-export function EditBookingModal({ isOpen, onClose, onSubmit, booking }: EditBookingModalProps) {
+export function EditBookingModal({ isOpen, onClose, onSubmit, onDelete, booking }: EditBookingModalProps) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoadingTeachers, setIsLoadingTeachers] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { confirm, confirmProps } = useConfirm();
 
   const [formData, setFormData] = useState({
     teacherId: '',
@@ -107,6 +112,30 @@ export function EditBookingModal({ isOpen, onClose, onSubmit, booking }: EditBoo
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleDelete = async () => {
+    if (!booking || !onDelete) return;
+    
+    const ok = await confirm({
+      title: 'Eliminar reserva',
+      message: '¿Estás seguro de que deseas eliminar esta reserva permanentemente? Esta acción no se puede deshacer.',
+      confirmText: 'Sí, eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
+
+    setError(null);
+    setIsDeleting(true);
+
+    try {
+      await onDelete(booking.id);
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Error al eliminar la reserva');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!booking) return null;
 
   return (
@@ -193,15 +222,28 @@ export function EditBookingModal({ isOpen, onClose, onSubmit, booking }: EditBoo
         </div>
 
         {/* Botones */}
-        <div className="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
-          </Button>
+        <div className="flex justify-between pt-4 border-t">
+          {onDelete && (
+            <Button 
+              type="button" 
+              variant="danger" 
+              onClick={handleDelete}
+              disabled={isSubmitting || isDeleting}
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          )}
+          <div className="flex gap-3 ml-auto">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="primary" disabled={isSubmitting || isDeleting}>
+              {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+            </Button>
+          </div>
         </div>
       </form>
+      <ConfirmDialog {...confirmProps} />
     </Modal>
   );
 }

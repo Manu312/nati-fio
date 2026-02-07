@@ -7,11 +7,17 @@ import { UserRole, BookingStatus } from '@/types';
 import type { Booking, UpdateBookingDto } from '@/types';
 import { bookingService } from '@/services/booking.service';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui';
 import { EditBookingModal } from '@/components/admin/EditBookingModal';
+import { AssignClassModal } from '@/components/admin/AssignClassModal';
+import { MonthlyClassesModal } from '@/components/admin/MonthlyClassesModal';
+import { RecurringGroupsList } from '@/components/admin/RecurringGroupsList';
 import { BookingCalendar } from '@/components/booking/BookingCalendar';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, List } from 'lucide-react';
+import { Calendar, List, Plus, CalendarRange, Repeat } from 'lucide-react';
+import { useConfirm } from '@/hooks';
+import { useToast } from '@/contexts/ToastContext';
 
 // Función auxiliar para parsear fecha y hora de forma segura
 const parseBookingDateTime = (date: string, time: string): Date => {
@@ -41,7 +47,12 @@ export default function ReservasAdminPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isMonthlyModalOpen, setIsMonthlyModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [activeTab, setActiveTab] = useState<'bookings' | 'recurring'>('bookings');
+  const { confirm, confirmProps } = useConfirm();
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadBookings();
@@ -51,7 +62,6 @@ export default function ReservasAdminPage() {
     try {
       setIsLoadingData(true);
       const data = await bookingService.getAll();
-      console.log('Bookings data:', data); // Debug: ver estructura de datos
       setBookings(data);
     } catch (error) {
       console.error('Error loading bookings:', error);
@@ -61,13 +71,19 @@ export default function ReservasAdminPage() {
   };
 
   const handleCancel = async (id: string) => {
-    if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
+    const ok = await confirm({
+      title: 'Cancelar reserva',
+      message: '¿Estás seguro de cancelar esta reserva?',
+      confirmText: 'Sí, cancelar',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await bookingService.cancel(id);
       loadBookings();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al cancelar la reserva');
+      showToast('error', error.response?.data?.message || 'Error al cancelar la reserva');
     }
   };
 
@@ -76,7 +92,7 @@ export default function ReservasAdminPage() {
       await bookingService.confirm(id);
       loadBookings();
     } catch (error: any) {
-      alert(error.message || 'Error al confirmar la reserva');
+      showToast('error', error.message || 'Error al confirmar la reserva');
     }
   };
 
@@ -88,6 +104,15 @@ export default function ReservasAdminPage() {
   const handleEditSubmit = async (id: string, data: UpdateBookingDto) => {
     await bookingService.update(id, data);
     loadBookings();
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await bookingService.cancel(id);
+      loadBookings();
+    } catch (error: any) {
+      showToast('error', error.message || 'Error al eliminar la reserva');
+    }
   };
 
   if (isLoading) {
@@ -108,60 +133,113 @@ export default function ReservasAdminPage() {
   return (
     <div className="p-4 lg:p-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 lg:mb-8">
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Todas las Reservas</h1>
-          <p className="text-gray-600 mt-1 lg:mt-2 text-sm lg:text-base">Vista completa del sistema de reservas</p>
+      <div className="mb-6 lg:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Gestión de Clases</h1>
+            <p className="text-gray-600 mt-1 lg:mt-2 text-sm lg:text-base">Administra reservas y clases recurrentes</p>
+          </div>
+
+          {/* Botones de acción */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setIsAssignModalOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Asignar Clase
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsMonthlyModalOpen(true)}
+            >
+              <CalendarRange className="w-4 h-4 mr-2" />
+              Clases Mensuales
+            </Button>
+          </div>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex bg-gray-100 rounded-lg p-1 self-start">
+        {/* Tabs */}
+        <div className="flex border-b border-gray-200">
           <button
-            onClick={() => setViewMode('calendar')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              viewMode === 'calendar'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+            onClick={() => setActiveTab('bookings')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'bookings'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
             <Calendar className="w-4 h-4" />
-            <span>Calendario</span>
+            Todas las Reservas
           </button>
           <button
-            onClick={() => setViewMode('list')}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              viewMode === 'list'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+            onClick={() => setActiveTab('recurring')}
+            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'recurring'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <List className="w-4 h-4" />
-            <span>Lista</span>
+            <Repeat className="w-4 h-4" />
+            Grupos Recurrentes
           </button>
         </div>
       </div>
 
-      {isLoadingData ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      ) : bookings.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 text-lg">No hay reservas en el sistema</p>
-          <p className="text-gray-400 text-sm mt-2">Las reservas aparecerán aquí cuando los alumnos las creen</p>
-        </div>
-      ) : viewMode === 'calendar' ? (
-        /* Calendar View */
-        <BookingCalendar
-          bookings={bookings}
-          isAdmin={true}
-          onEditBooking={handleEdit}
-          onConfirmBooking={handleConfirm}
-          onCancelBooking={handleCancel}
-        />
-      ) : (
+      {/* Content */}
+      {activeTab === 'bookings' ? (
         <>
+          {/* View Mode Toggle */}
+          <div className="flex justify-end mb-4">
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'calendar'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Calendario</span>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <List className="w-4 h-4" />
+                <span>Lista</span>
+              </button>
+            </div>
+          </div>
+
+          {isLoadingData ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : bookings.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg">No hay reservas en el sistema</p>
+              <p className="text-gray-400 text-sm mt-2">Las reservas aparecerán aquí cuando los alumnos las creen</p>
+            </div>
+          ) : viewMode === 'calendar' ? (
+            /* Calendar View */
+            <BookingCalendar
+              bookings={bookings}
+              isAdmin={true}
+              onEditBooking={handleEdit}
+              onConfirmBooking={handleConfirm}
+              onCancelBooking={handleCancel}
+            />
+          ) : (
+            <>
           {/* Vista móvil - Cards */}
           <div className="lg:hidden space-y-4">
             {bookings.map((booking, index) => (
@@ -307,9 +385,15 @@ export default function ReservasAdminPage() {
               </tbody>
             </table>
           </div>
+          </>
+          )}
         </>
+      ) : (
+        /* Tab: Grupos Recurrentes */
+        <RecurringGroupsList onUpdate={loadBookings} />
       )}
 
+      {/* Modales */}
       {/* Modal de edición */}
       <EditBookingModal
         isOpen={isEditModalOpen}
@@ -318,8 +402,25 @@ export default function ReservasAdminPage() {
           setEditingBooking(null);
         }}
         onSubmit={handleEditSubmit}
+        onDelete={handleDelete}
         booking={editingBooking}
       />
+
+      {/* Modal de asignar clase individual */}
+      <AssignClassModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        onSuccess={loadBookings}
+      />
+
+      {/* Modal de clases mensuales */}
+      <MonthlyClassesModal
+        isOpen={isMonthlyModalOpen}
+        onClose={() => setIsMonthlyModalOpen(false)}
+        onSuccess={loadBookings}
+      />
+
+      <ConfirmDialog {...confirmProps} />
     </div>
   );
 }

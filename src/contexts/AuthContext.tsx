@@ -94,14 +94,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const response = await authService.login(credentials);
       
-      console.log('🔐 AuthContext - Respuesta completa de login:', response);
-      console.log('🔐 AuthContext - Usuario:', response.user);
-      
       // Si el backend NO devuelve user, decodificar el JWT
       let user: User;
       
       if (!response.user) {
-        console.log('⚠️ Backend no devuelve user, decodificando JWT...');
         
         try {
           // Decodificar el JWT para obtener los datos del usuario (sin atob - CSP safe)
@@ -113,8 +109,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
             roles?: string[];
             role?: string;
           }>(response.access_token);
-          
-          console.log('📦 Payload del JWT:', payload);
           
           // Normalizar roles del payload
           let roles: UserRole[];
@@ -132,9 +126,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             roles,
           };
           
-          console.log('✅ Usuario construido desde JWT:', user);
         } catch (decodeError) {
-          console.error('❌ Error decodificando JWT:', decodeError);
           throw new Error('No se pudo obtener información del usuario');
         }
       } else {
@@ -143,13 +135,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Normalizar roles
       if (!user.roles || user.roles.length === 0) {
-        console.log('⚠️ Usuario sin roles, intentando normalizar...');
         
         // Opción 1: Puede que venga en singular "role"
         if ((user as any).role) {
           const roleStr = ((user as any).role as string).toUpperCase();
           user.roles = [roleStr as UserRole];
-          console.log('✅ Rol encontrado en .role:', user.roles);
         }
         // Opción 2: Puede que venga en un array de objetos
         else if (Array.isArray((user as any).roles) && 
@@ -158,11 +148,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           user.roles = (user as any).roles.map((r: any) => 
             ((r.name || r.role) as string).toUpperCase() as UserRole
           );
-          console.log('✅ Roles encontrados como objetos:', user.roles);
         }
         // Opción 3: Usuario sin roles definidos - asignar ALUMNO por defecto
         else {
-          console.log('⚠️ No se encontraron roles, asignando ALUMNO por defecto');
           user.roles = [UserRole.ALUMNO];
         }
       } else {
@@ -172,13 +160,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         );
       }
       
-      console.log('🔐 AuthContext - Roles normalizados:', user.roles);
 
       // Guardar usuario y token en localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('auth_token', response.access_token);
         localStorage.setItem('auth_user', JSON.stringify(user));
-        console.log('💾 Usuario y token guardados en localStorage');
       }
 
       setState({
@@ -203,13 +189,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Logout
    */
   const logout = useCallback(() => {
-    console.log('🚪 Cerrando sesión...');
     
     // Limpiar localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
-      console.log('🗑️ localStorage limpiado');
     }
     
     setState({

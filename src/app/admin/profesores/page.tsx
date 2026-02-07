@@ -8,6 +8,8 @@ import { Loader2, Plus, GraduationCap, Trash2, Edit } from 'lucide-react';
 import { CreateTeacherModal } from '@/components/admin/CreateTeacherModal';
 import { EditTeacherModal } from '@/components/admin/EditTeacherModal';
 import { Alert } from '@/components/ui/Alert';
+import { ConfirmDialog } from '@/components/ui';
+import { useConfirm } from '@/hooks';
 
 export default function ProfesoresPage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -16,6 +18,7 @@ export default function ProfesoresPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const { confirm, confirmProps } = useConfirm();
 
   useEffect(() => {
     loadTeachers();
@@ -48,7 +51,13 @@ export default function ProfesoresPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`¿Estás seguro de que quieres eliminar a ${name}?`)) return;
+    const ok = await confirm({
+      title: 'Eliminar profesor',
+      message: `¿Estás seguro de que quieres eliminar a ${name}? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar',
+      variant: 'danger',
+    });
+    if (!ok) return;
 
     try {
       await teacherService.delete(id);
@@ -178,6 +187,8 @@ export default function ProfesoresPage() {
           teacher={editingTeacher}
         />
       )}
+
+      <ConfirmDialog {...confirmProps} />
     </div>
   );
 }

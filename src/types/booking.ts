@@ -53,3 +53,61 @@ export interface UpdateBookingDto {
   startTime?: string;
   endTime?: string;
 }
+
+export interface AdminAssignBookingDto {
+  studentId: string;
+  teacherId: string;
+  subjectId?: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
+export interface MonthlyBookingDto {
+  studentId: string;
+  teacherId: string;
+  subjectId?: string;
+  dayOfWeek: number; // 0-6 (Sunday-Saturday)
+  startTime: string;
+  endTime: string;
+  month: number; // 1-12
+  year: number;
+}
+
+export interface RecurringGroup {
+  id: string;
+  studentId: string;
+  teacherId: string;
+  subjectId?: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  month: number;
+  year: number;
+  createdAt: string;
+  student?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  teacher?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  subject?: {
+    id: string;
+    name: string;
+  };
+  bookings?: Booking[];
+}
+
+export interface MonthlyBookingResult {
+  recurringGroupId: string;
+  totalDates: number;
+  successful: Booking[];
+  failed: {
+    date: string;
+    reason: string;
+  }[];
+}

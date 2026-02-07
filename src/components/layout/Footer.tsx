@@ -18,10 +18,10 @@ export function Footer() {
                     <div>
                         <h4 className="font-semibold mb-4 text-white">Plataforma</h4>
                         <ul className="space-y-2 text-sm text-gray-400">
-                            <li><Link href="#" className="hover:text-primary transition-colors">Inicio</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Nuestros Profesores</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Metodología</Link></li>
-                            <li><Link href="#" className="hover:text-primary transition-colors">Recursos</Link></li>
+                            <li><Link href="/" className="hover:text-primary transition-colors">Inicio</Link></li>
+                            <li><Link href="/nosotros" className="hover:text-primary transition-colors">Nosotros</Link></li>
+                            <li><Link href="/servicios/clases-particulares" className="hover:text-primary transition-colors">Clases Particulares</Link></li>
+                            <li><Link href="/reservar" className="hover:text-primary transition-colors">Reservar</Link></li>
                         </ul>
                     </div>
 
@@ -44,7 +44,7 @@ export function Footer() {
                                 <span>+54 9 11 7826-8810</span>
                             </li>
                             <li className="flex gap-4 mt-4">
-                                <Link href="https://www.instagram.com/insti_natyfiore/" className="p-2 rounded-full bg-white/5 hover:bg-primary/20 hover:text-primary transition-colors">
+                                <Link href="https://www.instagram.com/insti_natyfiore/" className="p-2 rounded-full bg-white/5 hover:bg-primary/20 hover:text-primary transition-colors" aria-label="Instagram de Naty & Fio">
                                     <Instagram className="w-5 h-5" />
                                 </Link>
                             </li>

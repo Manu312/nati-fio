@@ -29,6 +29,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="scroll-smooth" data-scroll-behavior="smooth">
+      <head>
+        {/* Preconnect al API para reducir cadenas de solicitudes críticas */}
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'} />
+        <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'} />
+      </head>
       <body
         className={`${inter.variable} ${outfit.variable} antialiased font-sans bg-background text-foreground min-h-screen flex flex-col`}
       >

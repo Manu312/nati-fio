@@ -47,6 +47,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalPr
                 <button
                   onClick={onClose}
                   className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Cerrar"
                 >
                   <X className="w-5 h-5" />
                 </button>

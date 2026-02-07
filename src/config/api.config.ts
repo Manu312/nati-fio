@@ -43,6 +43,10 @@ export const ENDPOINTS = {
     BASE: '/bookings',
     BY_ID: (id: string) => `/bookings/${id}`,
     CONFIRM: (id: string) => `/bookings/${id}/confirm`,
+    ADMIN_ASSIGN: '/bookings/admin-assign',
+    MONTHLY: '/bookings/monthly',
+    RECURRING_GROUPS: '/bookings/recurring-groups',
+    RENEW_MONTHLY: (groupId: string) => `/bookings/monthly/${groupId}/renew`,
   },
   // Students
   STUDENTS: {
