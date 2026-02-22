@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { useAuth } from '@/hooks';
-import { UserRole, BookingStatus } from '@/types';
-import type { Booking, Teacher } from '@/types';
+import { UserRole, BookingStatus, AttendanceStatus } from '@/types';
+import type { Booking, Teacher, UpdateAttendanceDto } from '@/types';
 import { bookingService } from '@/services/booking.service';
 import { teacherService } from '@/services';
 import { BookingCalendar } from '@/components/booking/BookingCalendar';
+import { AttendanceModal } from '@/components/admin/AttendanceModal';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, List } from 'lucide-react';
+import { Calendar, List, ChevronUp, ChevronDown } from 'lucide-react';
 
 // Función auxiliar para parsear fecha y hora de forma segura
 const parseBookingDateTime = (date: string, time: string): Date => {
@@ -39,12 +40,32 @@ const statusMap: Record<string, { label: string; className: string }> = {
   COMPLETED: { label: 'Completada', className: 'bg-blue-100 text-blue-800' },
 };
 
+const attendanceMap: Record<string, { label: string; className: string }> = {
+  PRESENT: { label: 'Presente', className: 'bg-green-100 text-green-700' },
+  ABSENT: { label: 'Ausente', className: 'bg-red-100 text-red-700' },
+};
+
 export default function ProfesorReservasPage() {
   const { isLoading } = useProtectedRoute({ requiredRoles: [UserRole.PROFESOR] });
   const { user } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [attendanceBooking, setAttendanceBooking] = useState<Booking | null>(null);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
+
+  const filteredBookings = useMemo(() => {
+    let result = [...bookings];
+    if (statusFilter) result = result.filter(b => b.status === statusFilter);
+    result.sort((a, b) => {
+      const valA = `${a.date}${a.startTime}`;
+      const valB = `${b.date}${b.startTime}`;
+      return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+    return result;
+  }, [bookings, statusFilter, sortDir]);
 
   useEffect(() => {
     if (user) {
@@ -74,6 +95,11 @@ export default function ProfesorReservasPage() {
     } finally {
       setIsLoadingData(false);
     }
+  };
+
+  const handleAttendanceSubmit = async (bookingId: string, data: UpdateAttendanceDto) => {
+    await bookingService.updateAttendance(bookingId, data);
+    loadBookings();
   };
 
   if (isLoading) {
@@ -137,8 +163,40 @@ export default function ProfesorReservasPage() {
           isAdmin={false}
         />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {bookings.map((booking, index) => (
+        <>
+          {/* Toolbar */}
+          <div className="flex flex-wrap gap-3 items-center mb-4">
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-600"
+            >
+              <option value="">Todos los estados</option>
+              <option value="PENDING">Pendiente</option>
+              <option value="CONFIRMED">Confirmada</option>
+              <option value="CANCELLED">Cancelada</option>
+              <option value="COMPLETED">Completada</option>
+            </select>
+            <button
+              onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 hover:bg-gray-50"
+            >
+              Fecha {sortDir === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            {statusFilter && (
+              <p className="text-sm text-gray-500">
+                {filteredBookings.length} de {bookings.length}
+              </p>
+            )}
+          </div>
+          {filteredBookings.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Sin resultados para los filtros aplicados</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {filteredBookings.map((booking, index) => (
             <motion.div
               key={booking.id}
               initial={{ opacity: 0, y: 20 }}
@@ -175,10 +233,45 @@ export default function ProfesorReservasPage() {
                   ⏰ {format(parseBookingDateTime(booking.date, booking.startTime), 'HH:mm', { locale: es })} - {format(parseBookingDateTime(booking.date, booking.endTime), 'HH:mm', { locale: es })}
                 </p>
               </div>
+
+              {booking.attendance && (
+                <div className="mt-3">
+                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${attendanceMap[booking.attendance]?.className ?? 'bg-gray-100 text-gray-600'}`}>
+                    Asistencia: {attendanceMap[booking.attendance]?.label ?? booking.attendance}
+                  </span>
+                  {booking.notes && (
+                    <p className="mt-2 text-xs text-gray-500 italic">{booking.notes}</p>
+                  )}
+                </div>
+              )}
+
+              {booking.status === BookingStatus.CONFIRMED && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => { setAttendanceBooking(booking); setIsAttendanceModalOpen(true); }}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {booking.attendance ? 'Editar presentismo' : 'Registrar presentismo'}
+                  </button>
+                </div>
+              )}
             </motion.div>
-          ))}
-        </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
+
+      {/* Modal de presentismo */}
+      <AttendanceModal
+        isOpen={isAttendanceModalOpen}
+        onClose={() => {
+          setIsAttendanceModalOpen(false);
+          setAttendanceBooking(null);
+        }}
+        onSubmit={handleAttendanceSubmit}
+        booking={attendanceBooking}
+      />
     </div>
   );
 }

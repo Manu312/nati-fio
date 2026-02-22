@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
 import { UserRole } from '@/types';
@@ -11,6 +11,7 @@ import { CreateSubjectModal } from '@/components/admin/CreateSubjectModal';
 import { EditSubjectModal } from '@/components/admin/EditSubjectModal';
 import { ConfirmDialog } from '@/components/ui';
 import { useConfirm } from '@/hooks';
+import { Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 // Mapeo de niveles para mostrar de forma legible
 const levelLabels: Record<string, { label: string; className: string }> = {
@@ -28,6 +29,32 @@ export default function MateriasPage() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [error, setError] = useState('');
   const { confirm, confirmProps } = useConfirm();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [levelFilter, setLevelFilter] = useState('');
+  const [sortField, setSortField] = useState<'name' | 'level'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const toggleSort = (field: typeof sortField) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  };
+
+  const filteredSubjects = useMemo(() => {
+    let result = [...subjects];
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(s => s.name.toLowerCase().includes(lower));
+    }
+    if (levelFilter) {
+      result = result.filter(s => s.level === levelFilter);
+    }
+    result.sort((a, b) => {
+      const valA = sortField === 'name' ? (a.name ?? '') : (a.level ?? '');
+      const valB = sortField === 'name' ? (b.name ?? '') : (b.level ?? '');
+      return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+    return result;
+  }, [subjects, searchTerm, levelFilter, sortField, sortDir]);
 
   useEffect(() => {
     loadSubjects();
@@ -99,8 +126,56 @@ export default function MateriasPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {subjects.map((subject, index) => (
+        <>
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Buscar materia..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <select
+                value={levelFilter}
+                onChange={e => setLevelFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+              >
+                <option value="">Todos los niveles</option>
+                <option value="primaria">Primario</option>
+                <option value="secundaria">Secundario</option>
+                <option value="universitaria">Universitario</option>
+              </select>
+              {(['name', 'level'] as const).map(field => (
+                <button
+                  key={field}
+                  onClick={() => toggleSort(field)}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                    sortField === field ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {field === 'name' ? 'Nombre' : 'Nivel'}
+                  {sortField === field ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+                </button>
+              ))}
+            </div>
+          </div>
+          {(searchTerm || levelFilter) && (
+            <p className="text-sm text-gray-500 mb-4">
+              {filteredSubjects.length} resultado{filteredSubjects.length !== 1 ? 's' : ''} de {subjects.length}
+            </p>
+          )}
+          {filteredSubjects.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <p className="text-gray-500">Sin resultados para los filtros aplicados</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredSubjects.map((subject, index) => (
             <motion.div
               key={subject.id}
               initial={{ opacity: 0, y: 20 }}
@@ -138,7 +213,9 @@ export default function MateriasPage() {
               </div>
             </motion.div>
           ))}
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       <CreateSubjectModal

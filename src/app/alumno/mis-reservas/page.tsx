@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { bookingService } from '@/services';
 import { Booking } from '@/types';
-import { Loader2, Calendar, Clock } from 'lucide-react';
+import { Loader2, Calendar, Clock, ChevronUp, ChevronDown } from 'lucide-react';
 import { format } from '@/utils/format';
 import { useConfirm } from '@/hooks';
 import { ConfirmDialog } from '@/components/ui';
@@ -14,6 +14,19 @@ export default function MisReservasPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const { confirm, confirmProps } = useConfirm();
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const filteredBookings = useMemo(() => {
+    let result = [...bookings];
+    if (statusFilter) result = result.filter(b => b.status === statusFilter);
+    result.sort((a, b) => {
+      const valA = `${a.date}${a.startTime}`;
+      const valB = `${b.date}${b.startTime}`;
+      return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+    return result;
+  }, [bookings, statusFilter, sortDir]);
 
   useEffect(() => {
     loadBookings();
@@ -63,6 +76,33 @@ export default function MisReservasPage() {
         <p className="text-gray-600 mt-1">Gestiona tus clases programadas</p>
       </div>
 
+      {/* Toolbar */}
+      {bookings.length > 0 && (
+        <div className="flex flex-wrap gap-3 items-center">
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+          >
+            <option value="">Todos los estados</option>
+            <option value="PENDING">Pendiente</option>
+            <option value="CONFIRMED">Confirmada</option>
+            <option value="CANCELLED">Cancelada</option>
+          </select>
+          <button
+            onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+            className="flex items-center gap-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white text-gray-600 hover:bg-gray-50"
+          >
+            Fecha {sortDir === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          {statusFilter && (
+            <p className="text-sm text-gray-500">
+              {filteredBookings.length} de {bookings.length}
+            </p>
+          )}
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {error}
@@ -82,9 +122,14 @@ export default function MisReservasPage() {
             Reservar Mi Primera Clase
           </motion.a>
         </div>
+      ) : filteredBookings.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+          <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500">Sin resultados para los filtros aplicados</p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {bookings.map((booking, index) => (
+          {filteredBookings.map((booking, index) => (
             <motion.div
               key={booking.id}
               initial={{ opacity: 0, x: -20 }}

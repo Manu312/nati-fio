@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { teacherService } from '@/services';
 import { Teacher } from '@/types';
-import { Loader2, Plus, GraduationCap, Trash2, Edit } from 'lucide-react';
+import { Loader2, Plus, GraduationCap, Trash2, Edit, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { CreateTeacherModal } from '@/components/admin/CreateTeacherModal';
 import { EditTeacherModal } from '@/components/admin/EditTeacherModal';
 import { Alert } from '@/components/ui/Alert';
@@ -19,6 +19,36 @@ export default function ProfesoresPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const { confirm, confirmProps } = useConfirm();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<'name' | 'maxCapacity'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const toggleSort = (field: typeof sortField) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  };
+
+  const filteredTeachers = useMemo(() => {
+    let result = [...teachers];
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(t =>
+        (`${t.firstName} ${t.lastName}`).toLowerCase().includes(lower) ||
+        (t.subjects?.some(s => s.name.toLowerCase().includes(lower)) ?? false)
+      );
+    }
+    result.sort((a, b) => {
+      if (sortField === 'name') {
+        const valA = `${a.firstName} ${a.lastName}`;
+        const valB = `${b.firstName} ${b.lastName}`;
+        return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+      } else {
+        const diff = (a.maxCapacity ?? 0) - (b.maxCapacity ?? 0);
+        return sortDir === 'asc' ? diff : -diff;
+      }
+    });
+    return result;
+  }, [teachers, searchTerm, sortField, sortDir]);
 
   useEffect(() => {
     loadTeachers();
@@ -95,6 +125,40 @@ export default function ProfesoresPage() {
         </motion.button>
       </div>
 
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Buscar por nombre o materia..."
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          />
+        </div>
+        <div className="flex gap-2">
+          {(['name', 'maxCapacity'] as const).map(field => (
+            <button
+              key={field}
+              onClick={() => toggleSort(field)}
+              className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                sortField === field ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {field === 'name' ? 'Nombre' : 'Capacidad'}
+              {sortField === field ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {searchTerm && (
+        <p className="text-sm text-gray-500">
+          {filteredTeachers.length} resultado{filteredTeachers.length !== 1 ? 's' : ''} de {teachers.length}
+        </p>
+      )}
+
       <AnimatePresence mode="wait">
         {error && (
           <Alert variant="error" onClose={() => setError('')}>
@@ -109,13 +173,13 @@ export default function ProfesoresPage() {
       </AnimatePresence>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {teachers.length === 0 ? (
+        {filteredTeachers.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No hay profesores registrados</p>
+            <p className="text-gray-500">{searchTerm ? 'Sin resultados para la búsqueda' : 'No hay profesores registrados'}</p>
           </div>
         ) : (
-          teachers.map((teacher, index) => (
+          filteredTeachers.map((teacher, index) => (
             <motion.div
               key={teacher.id}
               initial={{ opacity: 0, y: 20 }}

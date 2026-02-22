@@ -1,21 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
-import { UserRole, BookingStatus } from '@/types';
-import type { Booking, UpdateBookingDto } from '@/types';
+import { UserRole, BookingStatus, AttendanceStatus } from '@/types';
+import type { Booking, UpdateBookingDto, UpdateAttendanceDto } from '@/types';
 import { bookingService } from '@/services/booking.service';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui';
 import { EditBookingModal } from '@/components/admin/EditBookingModal';
+import { AttendanceModal } from '@/components/admin/AttendanceModal';
 import { AssignClassModal } from '@/components/admin/AssignClassModal';
 import { MonthlyClassesModal } from '@/components/admin/MonthlyClassesModal';
 import { RecurringGroupsList } from '@/components/admin/RecurringGroupsList';
 import { BookingCalendar } from '@/components/booking/BookingCalendar';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, List, Plus, CalendarRange, Repeat } from 'lucide-react';
+import { Calendar, List, Plus, CalendarRange, Repeat, Search, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { useConfirm } from '@/hooks';
 import { useToast } from '@/contexts/ToastContext';
 
@@ -47,12 +48,53 @@ export default function ReservasAdminPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [attendanceBooking, setAttendanceBooking] = useState<Booking | null>(null);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isMonthlyModalOpen, setIsMonthlyModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [activeTab, setActiveTab] = useState<'bookings' | 'recurring'>('bookings');
   const { confirm, confirmProps } = useConfirm();
   const { showToast } = useToast();
+  const [listSearch, setListSearch] = useState('');
+  const [listStatusFilter, setListStatusFilter] = useState('');
+  const [listSortField, setListSortField] = useState<'date' | 'alumno' | 'profesor'>('date');
+  const [listSortDir, setListSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const toggleListSort = (field: typeof listSortField) => {
+    if (listSortField === field) setListSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setListSortField(field); setListSortDir('asc'); }
+  };
+
+  const filteredBookings = useMemo(() => {
+    let result = [...bookings];
+    if (listSearch.trim()) {
+      const lower = listSearch.toLowerCase();
+      result = result.filter(b =>
+        (`${b.student?.firstName ?? ''} ${b.student?.lastName ?? ''}`).toLowerCase().includes(lower) ||
+        (`${b.teacher?.firstName ?? ''} ${b.teacher?.lastName ?? ''}`).toLowerCase().includes(lower) ||
+        (b.student?.user?.email?.toLowerCase() ?? '').includes(lower)
+      );
+    }
+    if (listStatusFilter) {
+      result = result.filter(b => b.status === listStatusFilter);
+    }
+    result.sort((a, b) => {
+      let valA = '', valB = '';
+      if (listSortField === 'date') {
+        valA = `${a.date}${a.startTime}`;
+        valB = `${b.date}${b.startTime}`;
+      } else if (listSortField === 'alumno') {
+        valA = `${a.student?.firstName ?? ''} ${a.student?.lastName ?? ''}`;
+        valB = `${b.student?.firstName ?? ''} ${b.student?.lastName ?? ''}`;
+      } else if (listSortField === 'profesor') {
+        valA = `${a.teacher?.firstName ?? ''} ${a.teacher?.lastName ?? ''}`;
+        valB = `${b.teacher?.firstName ?? ''} ${b.teacher?.lastName ?? ''}`;
+      }
+      return listSortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+    return result;
+  }, [bookings, listSearch, listStatusFilter, listSortField, listSortDir]);
 
   useEffect(() => {
     loadBookings();
@@ -101,6 +143,16 @@ export default function ReservasAdminPage() {
     setIsEditModalOpen(true);
   };
 
+  const handleAttendance = (booking: Booking) => {
+    setAttendanceBooking(booking);
+    setIsAttendanceModalOpen(true);
+  };
+
+  const handleAttendanceSubmit = async (bookingId: string, data: UpdateAttendanceDto) => {
+    await bookingService.updateAttendance(bookingId, data);
+    loadBookings();
+  };
+
   const handleEditSubmit = async (id: string, data: UpdateBookingDto) => {
     await bookingService.update(id, data);
     loadBookings();
@@ -128,6 +180,11 @@ export default function ReservasAdminPage() {
     CONFIRMED: { label: 'Confirmada', className: 'bg-green-100 text-green-800' },
     CANCELLED: { label: 'Cancelada', className: 'bg-red-100 text-red-800' },
     COMPLETED: { label: 'Completada', className: 'bg-blue-100 text-blue-800' },
+  };
+
+  const attendanceMap: Record<string, { label: string; className: string }> = {
+    PRESENT: { label: 'Presente', className: 'bg-green-100 text-green-700' },
+    ABSENT: { label: 'Ausente', className: 'bg-red-100 text-red-700' },
   };
 
   return (
@@ -240,9 +297,52 @@ export default function ReservasAdminPage() {
             />
           ) : (
             <>
+          {/* Toolbar de filtros y búsqueda */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={listSearch}
+                onChange={e => setListSearch(e.target.value)}
+                placeholder="Buscar por alumno o profesor..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <select
+                value={listStatusFilter}
+                onChange={e => setListStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+              >
+                <option value="">Todos los estados</option>
+                <option value="PENDING">Pendiente</option>
+                <option value="CONFIRMED">Confirmada</option>
+                <option value="CANCELLED">Cancelada</option>
+                <option value="COMPLETED">Completada</option>
+              </select>
+              {(['date', 'alumno', 'profesor'] as const).map(field => (
+                <button
+                  key={field}
+                  onClick={() => toggleListSort(field)}
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                    listSortField === field ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {field === 'date' ? 'Fecha' : field === 'alumno' ? 'Alumno' : 'Profesor'}
+                  {listSortField === field ? (listSortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-40" />}
+                </button>
+              ))}
+            </div>
+          </div>
+          {(listSearch || listStatusFilter) && (
+            <p className="text-sm text-gray-500 mb-3">
+              {filteredBookings.length} resultado{filteredBookings.length !== 1 ? 's' : ''} de {bookings.length}
+            </p>
+          )}
           {/* Vista móvil - Cards */}
           <div className="lg:hidden space-y-4">
-            {bookings.map((booking, index) => (
+            {filteredBookings.map((booking, index) => (
               <motion.div
                 key={booking.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -271,7 +371,13 @@ export default function ReservasAdminPage() {
                   <p>⏰ {format(parseBookingDateTime(booking.date, booking.startTime), 'HH:mm', { locale: es })} - {format(parseBookingDateTime(booking.date, booking.endTime), 'HH:mm', { locale: es })}</p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                {booking.attendance && (
+                  <span className={`inline-block mt-2 px-2 py-0.5 rounded text-xs font-medium ${attendanceMap[booking.attendance]?.className ?? 'bg-gray-100 text-gray-600'}`}>
+                    {attendanceMap[booking.attendance]?.label ?? booking.attendance}
+                  </span>
+                )}
+
+                <div className="flex flex-wrap gap-2 mt-3">
                   {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
                     <Button variant="secondary" size="sm" onClick={() => handleEdit(booking)}>
                       Editar
@@ -280,6 +386,11 @@ export default function ReservasAdminPage() {
                   {booking.status === BookingStatus.PENDING && (
                     <Button variant="primary" size="sm" onClick={() => handleConfirm(booking.id)}>
                       Confirmar
+                    </Button>
+                  )}
+                  {booking.status === BookingStatus.CONFIRMED && (
+                    <Button variant="secondary" size="sm" onClick={() => handleAttendance(booking)}>
+                      Presentismo
                     </Button>
                   )}
                   {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
@@ -297,14 +408,32 @@ export default function ReservasAdminPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Alumno
+                  <th
+                    onClick={() => toggleListSort('alumno')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                  >
+                    <span className="flex items-center gap-1">
+                      Alumno
+                      {listSortField === 'alumno' ? (listSortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    </span>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Profesor
+                  <th
+                    onClick={() => toggleListSort('profesor')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                  >
+                    <span className="flex items-center gap-1">
+                      Profesor
+                      {listSortField === 'profesor' ? (listSortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    </span>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Fecha y Hora
+                  <th
+                    onClick={() => toggleListSort('date')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100 select-none"
+                  >
+                    <span className="flex items-center gap-1">
+                      Fecha y Hora
+                      {listSortField === 'date' ? (listSortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    </span>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Estado
@@ -315,7 +444,7 @@ export default function ReservasAdminPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {bookings.map((booking, index) => (
+                {filteredBookings.map((booking, index) => (
                   <motion.tr
                     key={booking.id}
                     initial={{ opacity: 0, x: -20 }}
@@ -350,6 +479,11 @@ export default function ReservasAdminPage() {
                       }`}>
                         {statusMap[booking.status]?.label || booking.status}
                       </span>
+                      {booking.attendance && (
+                        <span className={`ml-1 px-2 py-0.5 text-xs rounded-full ${attendanceMap[booking.attendance]?.className ?? 'bg-gray-100 text-gray-600'}`}>
+                          {attendanceMap[booking.attendance]?.label ?? booking.attendance}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
                       {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
@@ -368,6 +502,15 @@ export default function ReservasAdminPage() {
                           onClick={() => handleConfirm(booking.id)}
                         >
                           Confirmar
+                        </Button>
+                      )}
+                      {booking.status === BookingStatus.CONFIRMED && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleAttendance(booking)}
+                        >
+                          Presentismo
                         </Button>
                       )}
                       {booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
@@ -404,6 +547,17 @@ export default function ReservasAdminPage() {
         onSubmit={handleEditSubmit}
         onDelete={handleDelete}
         booking={editingBooking}
+      />
+
+      {/* Modal de presentismo */}
+      <AttendanceModal
+        isOpen={isAttendanceModalOpen}
+        onClose={() => {
+          setIsAttendanceModalOpen(false);
+          setAttendanceBooking(null);
+        }}
+        onSubmit={handleAttendanceSubmit}
+        booking={attendanceBooking}
       />
 
       {/* Modal de asignar clase individual */}

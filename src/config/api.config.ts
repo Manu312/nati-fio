@@ -47,6 +47,7 @@ export const ENDPOINTS = {
     MONTHLY: '/bookings/monthly',
     RECURRING_GROUPS: '/bookings/recurring-groups',
     RENEW_MONTHLY: (groupId: string) => `/bookings/monthly/${groupId}/renew`,
+    ATTENDANCE: (id: string) => `/bookings/${id}/attendance`,
   },
   // Students
   STUDENTS: {

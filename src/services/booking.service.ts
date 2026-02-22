@@ -4,14 +4,22 @@
 
 import { apiClient } from './api';
 import { ENDPOINTS } from '@/config/api.config';
-import type { Booking, CreateBookingDto, UpdateBookingDto } from '@/types';
+import type { Booking, CreateBookingDto, UpdateBookingDto, UpdateAttendanceDto } from '@/types';
+
+interface PaginatedResponse<T> {
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
+}
 
 export const bookingService = {
   /**
    * Obtener todas las reservas (filtradas según rol)
    */
   async getAll(): Promise<Booking[]> {
-    return apiClient.get<Booking[]>(ENDPOINTS.BOOKINGS.BASE);
+    const res = await apiClient.get<PaginatedResponse<Booking> | Booking[]>(ENDPOINTS.BOOKINGS.BASE);
+    return Array.isArray(res) ? res : res.data;
   },
 
   /**
@@ -75,5 +83,12 @@ export const bookingService = {
    */
   async renewMonthly(groupId: string): Promise<import('@/types').MonthlyBookingResult> {
     return apiClient.post<import('@/types').MonthlyBookingResult>(ENDPOINTS.BOOKINGS.RENEW_MONTHLY(groupId));
+  },
+
+  /**
+   * Marcar presentismo del alumno (Profesor/Admin - solo en CONFIRMED)
+   */
+  async updateAttendance(id: string, data: UpdateAttendanceDto): Promise<Booking> {
+    return apiClient.patch<Booking>(ENDPOINTS.BOOKINGS.ATTENDANCE(id), data);
   },
 };

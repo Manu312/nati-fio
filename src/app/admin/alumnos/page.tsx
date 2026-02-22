@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { studentService } from '@/services';
 import { Student } from '@/types';
-import { Loader2, Plus, GraduationCap, Edit, Trash2, Mail, School, User } from 'lucide-react';
+import { Loader2, Plus, GraduationCap, Edit, Trash2, Mail, School, User, Search, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 import { CreateStudentModal } from '@/components/admin/CreateStudentModal';
 import { EditStudentModal } from '@/components/admin/EditStudentModal';
 import { Alert } from '@/components/ui/Alert';
@@ -21,6 +21,48 @@ export default function AlumnosPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<'name' | 'school' | 'grade'>('name');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const toggleSort = (field: typeof sortField) => {
+    if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
+  };
+
+  const getStudentName = (student: Student) => {
+    const parts = [student.firstName];
+    if (student.lastName) parts.push(student.lastName);
+    return parts.join(' ');
+  };
+
+  const getTutorName = (student: Student) => {
+    if (!student.tutorFirstName) return null;
+    const parts = [student.tutorFirstName];
+    if (student.tutorLastName) parts.push(student.tutorLastName);
+    return parts.join(' ');
+  };
+
+  const filteredStudents = useMemo(() => {
+    let result = [...students];
+    if (searchTerm.trim()) {
+      const lower = searchTerm.toLowerCase();
+      result = result.filter(s =>
+        getStudentName(s).toLowerCase().includes(lower) ||
+        (s.school?.toLowerCase() ?? '').includes(lower) ||
+        (s.parentEmail?.toLowerCase() ?? '').includes(lower) ||
+        (s.user?.email?.toLowerCase() ?? '').includes(lower)
+      );
+    }
+    result.sort((a, b) => {
+      let valA = '', valB = '';
+      if (sortField === 'name') { valA = getStudentName(a); valB = getStudentName(b); }
+      else if (sortField === 'school') { valA = a.school ?? ''; valB = b.school ?? ''; }
+      else if (sortField === 'grade') { valA = a.grade ?? ''; valB = b.grade ?? ''; }
+      return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+    return result;
+  }, [students, searchTerm, sortField, sortDir]);
 
   useEffect(() => {
     loadStudents();
@@ -80,19 +122,6 @@ export default function AlumnosPage() {
     }
   };
 
-  const getStudentName = (student: Student) => {
-    const parts = [student.firstName];
-    if (student.lastName) parts.push(student.lastName);
-    return parts.join(' ');
-  };
-
-  const getTutorName = (student: Student) => {
-    if (!student.tutorFirstName) return null;
-    const parts = [student.tutorFirstName];
-    if (student.tutorLastName) parts.push(student.tutorLastName);
-    return parts.join(' ');
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -119,6 +148,45 @@ export default function AlumnosPage() {
         </motion.button>
       </div>
 
+      {/* Toolbar de búsqueda y ordenamiento */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Buscar por nombre, email, escuela..."
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          />
+        </div>
+        <div className="flex gap-2">
+          {(['name', 'school', 'grade'] as const).map(field => (
+            <button
+              key={field}
+              onClick={() => toggleSort(field)}
+              className={`flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                sortField === field ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {field === 'name' ? 'Nombre' : field === 'school' ? 'Escuela' : 'Grado'}
+              {sortField === field ? (
+                sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ArrowUpDown className="w-3 h-3 opacity-40" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Contador */}
+      {searchTerm && (
+        <p className="text-sm text-gray-500">
+          {filteredStudents.length} resultado{filteredStudents.length !== 1 ? 's' : ''} de {students.length}
+        </p>
+      )}
+
       <AnimatePresence mode="wait">
         {error && (
           <Alert variant="error" onClose={() => setError('')}>
@@ -134,13 +202,13 @@ export default function AlumnosPage() {
 
       {/* Vista móvil - Cards */}
       <div className="lg:hidden space-y-4">
-        {students.length === 0 ? (
+        {filteredStudents.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No hay alumnos registrados</p>
+            <p className="text-gray-500">{searchTerm ? 'Sin resultados para la búsqueda' : 'No hay alumnos registrados'}</p>
           </div>
         ) : (
-          students.map((student, index) => (
+          filteredStudents.map((student, index) => (
             <motion.div
               key={student.id}
               initial={{ opacity: 0, y: 20 }}
@@ -209,11 +277,23 @@ export default function AlumnosPage() {
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Alumno
+              <th
+                onClick={() => toggleSort('name')}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              >
+                <span className="flex items-center gap-1">
+                  Alumno
+                  {sortField === 'name' ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                </span>
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Grado / Escuela
+              <th
+                onClick={() => toggleSort('school')}
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              >
+                <span className="flex items-center gap-1">
+                  Grado / Escuela
+                  {sortField === 'school' ? (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                </span>
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Tutor
@@ -227,15 +307,15 @@ export default function AlumnosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {students.length === 0 ? (
+            {filteredStudents.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center">
                   <GraduationCap className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No hay alumnos registrados</p>
+                  <p className="text-gray-500">{searchTerm ? 'Sin resultados para la búsqueda' : 'No hay alumnos registrados'}</p>
                 </td>
               </tr>
             ) : (
-              students.map((student, index) => (
+              filteredStudents.map((student, index) => (
                 <motion.tr
                   key={student.id}
                   initial={{ opacity: 0 }}

@@ -9,6 +9,11 @@ export enum BookingStatus {
   COMPLETED = 'COMPLETED',
 }
 
+export enum AttendanceStatus {
+  PRESENT = 'PRESENT',
+  ABSENT = 'ABSENT',
+}
+
 export interface Booking {
   id: string;
   studentId: string;
@@ -18,6 +23,8 @@ export interface Booking {
   startTime: string;
   endTime: string;
   status: BookingStatus;
+  attendance?: AttendanceStatus | null;
+  notes?: string | null;
   createdAt: string;
   student?: {
     id: string;
@@ -100,6 +107,11 @@ export interface RecurringGroup {
     name: string;
   };
   bookings?: Booking[];
+}
+
+export interface UpdateAttendanceDto {
+  attendance: AttendanceStatus;
+  notes?: string;
 }
 
 export interface MonthlyBookingResult {
