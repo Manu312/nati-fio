@@ -16,10 +16,31 @@ interface PaginatedResponse<T> {
 export const bookingService = {
   /**
    * Obtener todas las reservas (filtradas según rol)
+   * Itera todas las páginas para traer el set completo.
    */
   async getAll(): Promise<Booking[]> {
-    const res = await apiClient.get<PaginatedResponse<Booking> | Booking[]>(ENDPOINTS.BOOKINGS.BASE);
-    return Array.isArray(res) ? res : res.data;
+    const first = await apiClient.get<PaginatedResponse<Booking> | Booking[]>(
+      `${ENDPOINTS.BOOKINGS.BASE}?page=1&limit=50`
+    );
+
+    // Si el backend devuelve un array plano (sin paginar), retornar directo
+    if (Array.isArray(first)) return first;
+
+    const { data, total, limit } = first;
+    const totalPages = Math.ceil(total / limit);
+
+    if (totalPages <= 1) return data;
+
+    // Pedir el resto de páginas en paralelo
+    const remaining = await Promise.all(
+      Array.from({ length: totalPages - 1 }, (_, i) =>
+        apiClient.get<PaginatedResponse<Booking>>(
+          `${ENDPOINTS.BOOKINGS.BASE}?page=${i + 2}&limit=${limit}`
+        )
+      )
+    );
+
+    return [data, ...remaining.map((r) => r.data)].flat();
   },
 
   /**

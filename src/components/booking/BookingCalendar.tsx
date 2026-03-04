@@ -19,7 +19,7 @@ import {
   isToday,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Calendar, CalendarDays, Clock, User, BookOpen, X, Edit2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, CalendarDays, Clock, User, BookOpen, X, Edit2, GraduationCap } from 'lucide-react';
 import type { Booking } from '@/types';
 import { BookingStatus } from '@/types';
 
@@ -72,6 +72,7 @@ export function BookingCalendar({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewType, setViewType] = useState<ViewType>('month');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   // Parse booking date helper
   const getBookingDate = (booking: Booking): Date => {
@@ -209,29 +210,28 @@ export function BookingCalendar({
               } ${index % 7 === 6 ? 'border-r-0' : ''}`}
             >
               <div className="flex items-center justify-center mb-1">
-                <span
-                  className={`w-7 h-7 flex items-center justify-center text-sm rounded-full ${
+                <button
+                  onClick={() => dayBookings.length > 0 ? setSelectedDay(day) : undefined}
+                  className={`w-7 h-7 flex items-center justify-center text-sm rounded-full transition-colors ${
                     isCurrentDay
                       ? 'bg-blue-600 text-white font-bold'
                       : isCurrentMonth
-                      ? 'text-gray-900 font-medium'
-                      : 'text-gray-400'
-                  }`}
+                      ? 'text-gray-900 font-medium hover:bg-gray-100'
+                      : 'text-gray-400 hover:bg-gray-100'
+                  } ${dayBookings.length > 0 ? 'cursor-pointer' : 'cursor-default'}`}
                 >
                   {format(day, 'd')}
-                </span>
+                </button>
               </div>
 
               <div className="space-y-0.5 overflow-hidden">
-                {dayBookings.slice(0, 3).map((booking) => renderBookingChip(booking, true))}
-                {dayBookings.length > 3 && (
+                {dayBookings.slice(0, 2).map((booking) => renderBookingChip(booking, true))}
+                {dayBookings.length > 2 && (
                   <button
-                    onClick={() => {
-                      // Could open a day detail modal here
-                    }}
-                    className="w-full text-center text-xs text-blue-600 hover:text-blue-800 font-medium py-0.5"
+                    onClick={() => setSelectedDay(day)}
+                    className="w-full text-center text-xs font-semibold py-0.5 px-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
                   >
-                    +{dayBookings.length - 3} más
+                    +{dayBookings.length - 2} más
                   </button>
                 )}
               </div>
@@ -307,6 +307,138 @@ export function BookingCalendar({
       </div>
     </div>
   );
+
+  // Day Detail Modal
+  const renderDayDetailModal = () => {
+    if (!selectedDay) return null;
+    const dateKey = format(selectedDay, 'yyyy-MM-dd');
+    const dayBookings = bookingsByDate.get(dateKey) || [];
+    const dayLabel = format(selectedDay, "EEEE d 'de' MMMM, yyyy", { locale: es });
+
+    return (
+      <AnimatePresence>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setSelectedDay(null)}
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 60 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 60 }}
+            className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg z-10 flex flex-col max-h-[85vh]"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+              <div>
+                <h3 className="font-bold text-gray-900 capitalize">{dayLabel}</h3>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {dayBookings.length} clase{dayBookings.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedDay(null)}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Booking list */}
+            <div className="overflow-y-auto p-4 space-y-3 flex-1">
+              {dayBookings.map((booking) => {
+                const config = statusConfig[booking.status as BookingStatus] || statusConfig[BookingStatus.PENDING];
+                return (
+                  <div
+                    key={booking.id}
+                    className={`rounded-xl border p-4 ${config.bgColor} transition-colors`}
+                  >
+                    {/* Time + status row */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className={`w-4 h-4 ${config.textColor}`} />
+                        <span className={`font-bold text-sm ${config.textColor}`}>
+                          {booking.startTime.substring(0, 5)} – {booking.endTime.substring(0, 5)}
+                        </span>
+                      </div>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full bg-white/60 ${config.textColor}`}>
+                        {config.label}
+                      </span>
+                    </div>
+
+                    {/* Student */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <User className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="text-sm font-medium text-gray-900 truncate">
+                        {booking.student?.firstName} {booking.student?.lastName}
+                      </span>
+                    </div>
+
+                    {/* Teacher (admin only) */}
+                    {isAdmin && booking.teacher && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <GraduationCap className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="text-sm text-gray-600 truncate">
+                          {booking.teacher.firstName} {booking.teacher.lastName}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Subject */}
+                    {booking.subject?.name && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="text-sm text-gray-600 truncate">{booking.subject.name}</span>
+                      </div>
+                    )}
+
+                    {/* Actions (admin only) */}
+                    {isAdmin && booking.status !== BookingStatus.CANCELLED && booking.status !== BookingStatus.COMPLETED && (
+                      <div className="flex gap-2 mt-3 pt-3 border-t border-black/5">
+                        {booking.status === BookingStatus.PENDING && (
+                          <button
+                            onClick={() => {
+                              onConfirmBooking?.(booking.id);
+                              setSelectedDay(null);
+                            }}
+                            className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                          >
+                            Confirmar
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedDay(null);
+                            onEditBooking?.(booking);
+                          }}
+                          className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center justify-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => {
+                            onCancelBooking?.(booking.id);
+                            setSelectedDay(null);
+                          }}
+                          className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        </div>
+      </AnimatePresence>
+    );
+  };
 
   // Booking Detail Modal
   const renderBookingModal = () => {
@@ -529,6 +661,9 @@ export function BookingCalendar({
 
       {/* Calendar View */}
       {viewType === 'month' ? renderMonthView() : renderWeekView()}
+
+      {/* Day Detail Modal */}
+      {selectedDay && renderDayDetailModal()}
 
       {/* Booking Detail Modal */}
       {selectedBooking && renderBookingModal()}
